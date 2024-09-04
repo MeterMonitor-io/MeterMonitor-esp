@@ -1,0 +1,70 @@
+menu "WaterMeter Config"
+
+	config WATER_METER_SLEEP_TIME
+		int "The picture capture interval"
+		range 5 1440
+		default 5
+		help
+			The interval in which a picture is to be captured in minutes. Value must be between 5 and 1440 Minutes (24 hours). Defaults to every 5 minutes.
+
+    config WATER_METER_WIFI_SSID
+        string "WiFi SSID"
+        default "myssid"
+        help
+            SSID (network name) to connect to.
+
+    config WATER_METER_WIFI_PASSWORD
+        string "WiFi Password"
+        default "mypassword"
+        help
+            WiFi password to use.
+
+    config WATER_METER_WIFI_MAXIMUM_RETRY
+        int "Maximum retry"
+        default 5
+        help
+            Set the Maximum retry to avoid station reconnecting to the AP unlimited when the AP is really inexistent.
+
+    config WATER_METER_MQTT_URI
+        string "URI of the MQTT-Broker"
+        default "mqtt://mqtt.eclipseprojects.io"
+        help
+            URI of the Broker, to which pictures should be send
+
+    config WATER_METER_MQTT_PORT
+        int "MQTT-Broker Port"
+        default 1883
+        help
+            Port to connect on to the MQTT-Broker
+
+    config WATER_METER_MQTT_TOPIC
+        string "Topic to publish to"
+        default "WaterMeter/tmp/"
+        help
+            The Topic on the MQTT-Broker to publish all messages
+
+    config WATER_METER_MQTT_USERNAME
+        string "Username (if credentials needed)"
+        help
+            Username of the credentials, if needed. If not defined no authentication is needed.
+
+    config WATER_METER_MQTT_USERNAME_DEFINED
+        bool
+        default "y" if WATER_METER_MQTT_USERNAME != ""
+        depends on WATER_METER_MQTT_USERNAME != ""
+        help
+            This option is automatically set if a username is defined.
+
+    config WATER_METER_MQTT_PASSWORD
+        string "Password (if credentials needed)"
+        help
+            Password of the credentials, if needed. If not defined no authentication is needed.
+
+    config WATER_METER_MQTT_PASSWORD_DEFINED
+        bool
+        default "y" if WATER_METER_MQTT_PASSWORD != ""
+        depends on WATER_METER_MQTT_PASSWORD != ""
+        help
+            This option is automatically set if a password is defined.
+
+endmenu
