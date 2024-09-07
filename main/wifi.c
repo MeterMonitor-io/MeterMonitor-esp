@@ -9,9 +9,9 @@
 #include "esp_log.h"
 #include <string.h>
 
-#define ESP_WIFI_RETRY_NUM      CONFIG_WATER_METER_WIFI_MAXIMUM_RETRY
-#define ESP_WIFI_PASS           CONFIG_WATER_METER_WIFI_PASSWORD
-#define ESP_WIFI_SSID           CONFIG_WATER_METER_WIFI_SSID
+#define ESP_WIFI_RETRY_NUM      CONFIG_METER_MONITOR_WIFI_MAXIMUM_RETRY
+#define ESP_WIFI_PASS           CONFIG_METER_MONITOR_WIFI_PASSWORD
+#define ESP_WIFI_SSID           CONFIG_METER_MONITOR_WIFI_SSID
 #define WIFI_CONNECTED_BIT      BIT0
 #define WIFI_FAIL_BIT           BIT1
 
@@ -34,14 +34,14 @@ static void event_handler(__attribute__((unused)) void* arg, esp_event_base_t ev
         ESP_LOGI(TAG,"connect to the AP fail");
     } else if (event_base == IP_EVENT && event_id == IP_EVENT_STA_GOT_IP) {
         ip_event_got_ip_t* event = (ip_event_got_ip_t*) event_data;
-        ESP_LOGI(TAG, "got ip:" IPSTR, IP2STR(&event->ip_info.ip));
+        ESP_LOGI(TAG, "Got IP: " IPSTR, IP2STR(&event->ip_info.ip));
         s_retry_num = 0;
         xEventGroupSetBits(s_wifi_event_group, WIFI_CONNECTED_BIT);
     }
 }
 
+
 void disconnect_wifi(void) {
-    vTaskDelay(pdMS_TO_TICKS(100));
     ESP_ERROR_CHECK(esp_wifi_disconnect());
     ESP_ERROR_CHECK(esp_wifi_stop());
 }
@@ -49,6 +49,7 @@ void disconnect_wifi(void) {
 
 bool connect_wifi(void) {
     esp_log_level_set(TAG, ESP_LOG_INFO);
+    ESP_LOGI(TAG, "Trying to connect to WiFi...");
 
     // NVS needs to be initialised for Wi-Fi usage
     esp_err_t ret = nvs_flash_init();
@@ -106,10 +107,10 @@ bool connect_wifi(void) {
 
     // xEventGroupWaitBits() returns the bits before the call returned; hence we can test which event actually happened.
     if (bits & WIFI_CONNECTED_BIT) {
-        ESP_LOGI(TAG, "Connected to AP with SSID:%s and password:%s", ESP_WIFI_SSID, ESP_WIFI_PASS);
+        ESP_LOGI(TAG, "Connected to AP with SSID: %s", ESP_WIFI_SSID);
         return true;
     } else if (bits & WIFI_FAIL_BIT) {
-        ESP_LOGI(TAG, "Failed to connect to SSID:%s, password:%s", ESP_WIFI_SSID, ESP_WIFI_PASS);
+        ESP_LOGI(TAG, "Failed to connect to SSID:%s", ESP_WIFI_SSID);
     } else {
         ESP_LOGE(TAG, "UNEXPECTED ERROR");
     }
