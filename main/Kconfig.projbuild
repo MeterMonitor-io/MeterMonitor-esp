@@ -73,6 +73,67 @@ menu "MeterMonitor config"
         help
             This option is automatically set if a password is defined.
 
+	config METER_MONITOR_FLASH
+		bool "Flash - Light?"
+		default "n"
+		help
+			Use the build in flash to light up the meter?
+
+	config METER_MONITOR_FLASH_GPIO
+		int "Flash - GPIO"
+		default 4
+		range 0 39
+		depends on METER_MONITOR_FLASH
+		help
+			Select the GPIO pin that the board uses for the internal flash. ESP32-Cam's default is Pin 4.
+
+	config METER_MONITOR_LED_STRIP
+		bool "LED-Strip - Light?"
+		default "n"
+		help
+			Use an external LED-Strip to light up the meter?
+
+	config METER_MONITOR_LED_STRIP_GPIO
+		int "LED-Strip - GPIO"
+		default 12
+		range 0 39
+		depends on METER_MONITOR_LED_STRIP
+		help
+			Select the GPIO pin that is used for the LED-Strip.
+
+	config METER_MONITOR_LED_STRIP_LED_COUNT
+		int "LED-Strip - LED Count"
+		default 9
+		range 1 100
+		depends on METER_MONITOR_LED_STRIP
+		help
+			The number of LEDs, that are supposed to be addressed and lit up.
+
+	config METER_MONITOR_LED_STRIP_R
+		int "LED-Strip - Red"
+		range 0 255
+		default 50
+		depends on METER_MONITOR_LED_STRIP
+		help
+			The Red-component of the light, the LED-Strip should light up
+
+	config METER_MONITOR_LED_STRIP_G
+		int "LED-Strip - Green"
+		range 0 255
+		default 50
+		depends on METER_MONITOR_LED_STRIP
+		help
+			The Green-component of the light, the LED-Strip should light up
+
+	config METER_MONITOR_LED_STRIP_B
+		int "LED-Strip - Blue"
+		range 0 255
+		default 50
+		depends on METER_MONITOR_LED_STRIP
+		help
+			The Blue-component of the light, the LED-Strip should light up
+
+
     choice METER_MONITOR_CAMERA_FRAME_SIZE
         bool "Camera Frame Size"
         default METER_MONITOR_CAMERA_FRAME_SIZE_VGA

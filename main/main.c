@@ -5,6 +5,7 @@
 #include "sdkconfig.h"
 #include "esp_sleep.h"
 #include <sys/time.h>
+#include <esp_wifi.h>
 #include "esp_log.h"
 #include <string.h>
 #include <stdio.h>
@@ -22,6 +23,7 @@ RTC_DATA_ATTR static struct timeval sleep_enter_time;
 static const char *TAG = "Picture-Task";
 static struct timeval wake_up_time;
 RTC_DATA_ATTR int bootCount;
+int8_t wifiRSSI;
 
 
 static void configure_timer_wakeup() {
@@ -67,8 +69,11 @@ static void start_deep_sleep() {
 static void picture_capture_task() {
     ++bootCount;
     // -----------------------------------------------------------------------------------------------------------------
-    // --------------------------------------- TIMEKEEPING AND LOGGING --------------------------------------------------
+    // --------------------------------------- TIMEKEEPING AND LOGGING -------------------------------------------------
     // -----------------------------------------------------------------------------------------------------------------
+    // Zeitzone auf "Europe/Berlin" (CET/CEST) einstellen (Wird nicht nach DeepSleep gespeichert)
+    setenv("TZ", "CET-1CEST,M3.5.0,M10.5.0/3", 1);
+    tzset();
     gettimeofday(&wake_up_time, NULL);
 
     time_t sleep_time_ms = (wake_up_time.tv_sec - sleep_enter_time.tv_sec) * 1000
@@ -86,6 +91,12 @@ static void picture_capture_task() {
     // ----------------------------------------------- INIT WIFI -------------------------------------------------------
     // -----------------------------------------------------------------------------------------------------------------
     connect_wifi();
+
+    // Hole und Speichere RSSI-Informationen zum verbundenen Access-Point
+    wifi_ap_record_t ap_info;
+    ESP_ERROR_CHECK(esp_wifi_sta_get_ap_info(&ap_info));
+    ESP_LOGI(TAG, "SSID: %s, RSSI: %d dBm", ap_info.ssid, ap_info.rssi);
+    wifiRSSI = ap_info.rssi;
 
     // -----------------------------------------------------------------------------------------------------------------
     // ------------------------------------------- Sync Time IF needed -------------------------------------------------
@@ -134,6 +145,7 @@ static void picture_capture_task() {
     root = cJSON_CreateObject();
     cJSON_AddItemToObject(root, "name", cJSON_CreateString(METER_MONITOR_NAME));
     cJSON_AddNumberToObject(root, "picture_number", bootCount);
+    cJSON_AddNumberToObject(root, "WiFi-RSSI", wifiRSSI);
     cJSON_AddItemToObject(root, "picture", picNode=cJSON_CreateObject());
     cJSON_AddStringToObject(picNode, "format", "jpeg");
     cJSON_AddStringToObject(picNode, "timestamp", timeString);
