@@ -1,0 +1,7 @@
+build/
+cmake-build-debug/
+.idea/
+managed_components/
+dependencies.lock
+sdkconfig
+sdkconfig.old
