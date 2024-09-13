@@ -1,5 +1,17 @@
 menu "MeterMonitor config"
 
+    choice METER_MONITOR_BOARD
+        bool "ESP32-Board to be used"
+        default METER_MONITOR_BOARD_ESP32_CAM
+        help
+            MeterMonitor is tested on more than one ESP32-Board, that need different settings. Select the board, that is to be used.
+
+	config METER_MONITOR_BOARD_ESP32_CAM
+		bool "AiThinker ESP32-Cam"
+	config METER_MONITOR_BOARD_SEEED_XIAO_ESP32S3_SENSE
+		bool "Seeed Studio XIAO ESP32S3 Sense"
+    endchoice
+
 	config METER_MONITOR_SLEEP_TIME
 		int "The picture capture interval (in min.)"
 		range 5 1440
@@ -85,7 +97,7 @@ menu "MeterMonitor config"
 		range 0 39
 		depends on METER_MONITOR_FLASH
 		help
-			Select the GPIO pin that the board uses for the internal flash. ESP32-Cam's default is Pin 4.
+			Select the GPIO pin that the board uses for the internal flash. Default for ESP32-Cam is GPIO 4. Default for Seeed Studio XIAO ESP32S3 Sense is GPIO 21.
 
 	config METER_MONITOR_LED_STRIP
 		bool "LED-Strip - Light?"
