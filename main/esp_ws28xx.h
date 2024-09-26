@@ -46,5 +46,6 @@ esp_err_t ws28xx_init(int pin, led_strip_model_t model, int num_of_leds,
                       CRGB **led_buffer_ptr);
 void ws28xx_fill_all(CRGB color);
 esp_err_t ws28xx_update();
+esp_err_t ws28xx_free();
 
 #endif /* MAIN_ESP_WS28XX_H_ */

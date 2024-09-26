@@ -38,7 +38,7 @@ menu "MeterMonitor config"
             WiFi password to use.
 
     config METER_MONITOR_WIFI_MAXIMUM_RETRY
-        int "Maximum retry"
+        int "WiFi maximum retries"
         default 5
         help
             Set the Maximum retry to avoid station reconnecting to the AP unlimited when the AP is really inexistent.

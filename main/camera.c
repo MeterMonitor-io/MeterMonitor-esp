@@ -3,7 +3,8 @@
 #include <esp_system.h>
 #include "esp_camera.h"
 #include "esp_ws28xx.h"
-#include <rom/gpio.h>
+#include "driver/gpio.h"
+#include "freertos/task.h"
 #include <esp_log.h>
 
 #define LED_NUM             CONFIG_METER_MONITOR_LED_STRIP_LED_COUNT
@@ -114,6 +115,7 @@ void set_camera_parameters() {
 }
 
 esp_err_t init_camera(void) {
+    ESP_LOGI(TAG, "Initializing camera");
     esp_err_t err;
     for (int i = 1; i <= CAM_INIT_MAX_TRIES; ++i) {
         err = esp_camera_init(&camera_config);
@@ -130,10 +132,22 @@ esp_err_t init_camera(void) {
     return ESP_OK;
 }
 
+esp_err_t free_camera(void) {
+    ESP_LOGI(TAG, "Freeing camera");
+    esp_err_t err = esp_camera_deinit();
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "Camera freeing failed!");
+        return err;
+    }
+
+    return ESP_OK;
+}
+
 camera_fb_t* take_picture(void) {
 #ifdef CONFIG_METER_MONITOR_FLASH
-    gpio_pad_select_gpio(FLASH_LED_GPIO);
+    ESP_ERROR_CHECK(gpio_reset_pin(FLASH_LED_GPIO));
     ESP_ERROR_CHECK(gpio_set_direction(FLASH_LED_GPIO, GPIO_MODE_OUTPUT));
+    //ESP_ERROR_CHECK(gpio_set_pull_mode(FLASH_LED_GPIO, GPIO_PULLDOWN_ONLY));
     ESP_ERROR_CHECK(gpio_set_level(FLASH_LED_GPIO, 1));
     ESP_LOGI(TAG, "Flash turned on successfully");
 #endif
@@ -155,6 +169,7 @@ camera_fb_t* take_picture(void) {
     ws28xx_fill_all((CRGB){.r=0, .g=0, .b=0});
     ESP_ERROR_CHECK(ws28xx_update());
     ESP_LOGI(TAG, "LED-Strip turned off successfully");
+    ESP_ERROR_CHECK(ws28xx_free());
 #endif
     return picture;
 }
