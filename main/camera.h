@@ -6,5 +6,6 @@
 
 esp_err_t init_camera(void);
 camera_fb_t* take_picture(void);
+esp_err_t free_camera(void);
 
 #endif // CAMERA_H
