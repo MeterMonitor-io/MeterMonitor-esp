@@ -78,6 +78,9 @@ idf.py -p /dev/ttyUSB0 monitor
 ## Repository Structure
 ```bash
 metermonitor-esp/
+├── documentation/
+│   │                       # Project documentation
+│   └── Wasserzaehler-digitalisierung_Masterprojekt_Krzysztof-Struzyna_SS24.pdf
 ├── src/
 │   ├── camera.c            # ESP32-Cam camera - Handling
 │   ├── CMakeLists.txt
