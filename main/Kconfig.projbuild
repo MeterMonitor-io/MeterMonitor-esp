@@ -85,6 +85,20 @@ menu "MeterMonitor config"
         help
             This option is automatically set if a password is defined.
 
+	config METER_MONITOR_DONE
+		bool "Send DONE-Signal?"
+		default "y"
+		help
+			Send DONE-signal for the TPL5110-Module?
+
+	config METER_MONITOR_DONE_GPIO
+		int "Done - GPIO"
+		default 9
+		range 0 39
+		depends on METER_MONITOR_DONE
+		help
+			Select the GPIO pin that is set high to turn off power supply via TPL5110. Default for Seeed Studio XIAO ESP32S3 Sense is GPIO 9.
+
 	config METER_MONITOR_FLASH
 		bool "Flash - Light?"
 		default "n"

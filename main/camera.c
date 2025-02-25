@@ -6,6 +6,7 @@
 #include "driver/gpio.h"
 #include "freertos/task.h"
 #include <esp_log.h>
+#include <driver/rtc_io.h>
 
 #define LED_NUM             CONFIG_METER_MONITOR_LED_STRIP_LED_COUNT
 #define LED_GPIO            CONFIG_METER_MONITOR_LED_STRIP_GPIO
@@ -145,6 +146,7 @@ esp_err_t free_camera(void) {
 
 camera_fb_t* take_picture(void) {
 #ifdef CONFIG_METER_MONITOR_FLASH
+    ESP_ERROR_CHECK(rtc_gpio_hold_dis(FLASH_LED_GPIO));
     ESP_ERROR_CHECK(gpio_reset_pin(FLASH_LED_GPIO));
     ESP_ERROR_CHECK(gpio_set_direction(FLASH_LED_GPIO, GPIO_MODE_OUTPUT));
     //ESP_ERROR_CHECK(gpio_set_pull_mode(FLASH_LED_GPIO, GPIO_PULLDOWN_ONLY));
@@ -163,6 +165,7 @@ camera_fb_t* take_picture(void) {
 
 #ifdef CONFIG_METER_MONITOR_FLASH
     ESP_ERROR_CHECK(gpio_set_level(FLASH_LED_GPIO, 0));
+    ESP_ERROR_CHECK(rtc_gpio_isolate(FLASH_LED_GPIO)); // Disable internal 47K pullup on LED to prevent drain
     ESP_LOGI(TAG, "Flash turned off successfully");
 #endif
 #ifdef CONFIG_METER_MONITOR_LED_STRIP
