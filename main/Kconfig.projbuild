@@ -14,7 +14,7 @@ menu "MeterMonitor config"
 
 	config METER_MONITOR_SLEEP_TIME
 		int "The picture capture interval (in min.)"
-		range 5 1440
+		range 1 1440
 		default 5
 		help
 			The interval in which a picture is to be captured in minutes. Value must be between 5 and 1440 Minutes (24 hours). Defaults to every 5 minutes.
@@ -61,6 +61,12 @@ menu "MeterMonitor config"
         help
             Port to connect on to the MQTT-Broker
 
+    config METER_MONITOR_TOPIC_BASE
+        string "MQTT-Topic for publishing"
+        default "MeterMonitor/"
+        help
+            Topic, to which the data will be send to. It needs to end with '/', because the METER_MONITOR_NAME is appended after this.
+
     config METER_MONITOR_MQTT_USERNAME
         string "Username (if credentials needed)"
         help
@@ -93,7 +99,7 @@ menu "MeterMonitor config"
 
 	config METER_MONITOR_DONE_GPIO
 		int "Done - GPIO"
-		default 9
+		default 2
 		range 0 39
 		depends on METER_MONITOR_DONE
 		help

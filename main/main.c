@@ -17,7 +17,6 @@
 #include "sntp.h"
 #include "mqtt.h"
 
-#define DONE_PIN                CONFIG_METER_MONITOR_DONE_GPIO
 #define METER_MONITOR_NAME      CONFIG_METER_MONITOR_NAME
 
 RTC_DATA_ATTR static struct timeval sleep_enter_time;
@@ -50,6 +49,8 @@ static void configure_timer_wakeup() {
 }
 
 
+#ifdef CONFIG_METER_MONITOR_DONE
+#define DONE_PIN                CONFIG_METER_MONITOR_DONE_GPIO
 // Send 'Done' signal to TPL5110 Low-power Timer to shut off power externally
 static void send_done_signal() {
     ESP_ERROR_CHECK(gpio_set_direction(DONE_PIN, GPIO_MODE_OUTPUT));
@@ -59,9 +60,11 @@ static void send_done_signal() {
         ESP_ERROR_CHECK(gpio_set_level(DONE_PIN, 1));
         vTaskDelay(pdMS_TO_TICKS(200));
         ESP_ERROR_CHECK(gpio_set_level(DONE_PIN, 0));
+        vTaskDelay(pdMS_TO_TICKS(100));
     }
     ESP_LOGW(TAG, "Power could not be cut successfully, continuing to go into deep sleep!");
 }
+#endif
 
 
 static void start_deep_sleep() {
@@ -121,7 +124,7 @@ static void picture_capture_task() {
     time(&now);
     localtime_r(&now, &timeInfo);
 
-    // Is time set? If not, tm_year will be (2024 - 1900).
+    // Is time set? If not, tm_year will be (2024-1900).
     if (timeInfo.tm_year < (2024 - 1900)) {
         ESP_LOGI(TAG, "Time is not set yet. Syncing time over NTP.");
         obtain_time();
