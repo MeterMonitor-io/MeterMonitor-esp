@@ -11,12 +11,13 @@
 #define METER_MONITOR_NAME      CONFIG_METER_MONITOR_NAME
 #define MQTT_URI                CONFIG_METER_MONITOR_MQTT_URI
 #define MQTT_PORT               CONFIG_METER_MONITOR_MQTT_PORT
+#define MQTT_TOPIC_BASE         CONFIG_METER_MONITOR_TOPIC_BASE
 #define MQTT_USERNAME           CONFIG_METER_MONITOR_MQTT_USERNAME
 #define MQTT_PASSWORD           CONFIG_METER_MONITOR_MQTT_PASSWORD
 
 static const char *TAG = "MQTT-Controller";
 esp_mqtt_client_handle_t client;
-const int maxRetryCount = 20;
+const int secondsToTry = 50;
 bool brokerConnected = false;
 bool messageSent = false;
 
@@ -89,23 +90,24 @@ void start_mqtt(void) {
 void publish_message(const char *msg) {
     // Make sure MQTT-Broker is connected
     int retry = 0;
-    while (brokerConnected != true && ++retry < maxRetryCount) {
-        ESP_LOGI(TAG, "Waiting for broker connection... (%d/%d)", retry, maxRetryCount);
+    while (brokerConnected != true && ++retry < secondsToTry) {
+        ESP_LOGI(TAG, "Waiting for broker connection... (%d/%d)", retry, secondsToTry);
         vTaskDelay(pdMS_TO_TICKS(1000));
     }
 
     // Construct Topic-String
-    char topic[100] = "MeterMonitor/";
+    char topic[100] = MQTT_TOPIC_BASE;
     strcat(topic, METER_MONITOR_NAME);
     strcat(topic, "/");
 
     // Publish MQTT message to the right topic (with QOS 2)
+    ESP_LOGI(TAG, "Sending message to %s", topic);
     esp_mqtt_client_publish(client, topic, msg, 0, 2, 0);
 
     // Make sure the Message was sent before continuing
     retry = 0;
-    while (messageSent != true && ++retry < maxRetryCount) {
-        ESP_LOGI(TAG, "Waiting for message to be sent... (%d/%d)", retry, maxRetryCount);
+    while (messageSent != true && ++retry < secondsToTry) {
+        ESP_LOGI(TAG, "Waiting for message to be sent... (%d/%d)", retry, secondsToTry);
         vTaskDelay(pdMS_TO_TICKS(1000));
     }
 
