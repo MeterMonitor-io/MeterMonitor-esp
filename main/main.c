@@ -25,7 +25,7 @@ RTC_DATA_ATTR static struct timeval sleep_enter_time;
 static const char *bootCountKey = "bootCount";
 static const char *TAG = "[Picture-Task]";
 static struct timeval wake_up_time;
-bool firstBoot = false;
+bool isCleanBoot = false;
 uint32_t bootCount;
 int8_t wifiRSSI;
 
@@ -36,7 +36,7 @@ static void configure_timer_wakeup() {
     // If it is the first boot, the wake_up_time should not be right due to the time not being synced at boot
     // Meaning: Sleep for the predefined amount of time
     // Else: Try to compensate for the time the ESP has been working to minimize the time deviation
-    if (firstBoot) {
+    if (isCleanBoot) {
         ESP_LOGI(TAG, "Activating deep sleep Timer for %llu milliseconds", default_sleep_time_ms);
         ESP_ERROR_CHECK(esp_sleep_enable_timer_wakeup(default_sleep_time_ms * 1000));
     } else {
@@ -92,10 +92,7 @@ static void picture_capture_task() {
     // -----------------------------------------------------------------------------------------------------------------
     // ----------------------------------------------- INIT NVS --------------------------------------------------------
     // -----------------------------------------------------------------------------------------------------------------
-    if (!init_nvs()) {
-        ESP_LOGE(TAG, "Error initializing NVS");
-        return;
-    }
+    if (!init_nvs()) return;
 
     // -----------------------------------------------------------------------------------------------------------------
     // -------------------------------------- GET BOOT COUNT + INCREMENT -----------------------------------------------
@@ -120,7 +117,7 @@ static void picture_capture_task() {
             break;
         }
         default:
-            firstBoot = true;
+            isCleanBoot = true;
             ESP_LOGI(TAG, "Device is booting...");
     }
 
@@ -215,10 +212,7 @@ static void picture_capture_task() {
     // -----------------------------------------------------------------------------------------------------------------
     // ------------------------------------------- STORE BOOT COUNT ----------------------------------------------------
     // -----------------------------------------------------------------------------------------------------------------
-    if (!write_value(bootCountKey, bootCount)) {
-        ESP_LOGE(TAG, "Error writing bootCount to NVS");
-        return;
-    }
+    if (!write_value(bootCountKey, bootCount)) return;
 
     // -----------------------------------------------------------------------------------------------------------------
     // ----------------------------------------------- CLOSE NVS -------------------------------------------------------

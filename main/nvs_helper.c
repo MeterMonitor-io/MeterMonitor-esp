@@ -43,7 +43,7 @@ void read_value(const char *key, uint32_t *value) {
             break;
         case ESP_ERR_NVS_NOT_FOUND:
             *value = 0;
-            ESP_LOGI(TAG, "The value is not initialized yet! Setting it to 0");
+            ESP_LOGI(TAG, "The value is not initialized yet! Returning 0 as default");
             break;
         default:
             *value = 0;

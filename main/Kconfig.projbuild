@@ -50,10 +50,10 @@ menu "MeterMonitor config"
             Hostname of the SNTP server to be used for time synchronisation.
 
     config METER_MONITOR_SNTP_TIME_SYNC_ALWAYS
-		bool "Sync time at every boot"
-		default "y"
-		help
-			Timekeeping of the ESP is not very accurate in deep sleep. To prevent very serious clock drift, the time can be synced at every boot.
+        bool "Sync time at every boot"
+        default "y"
+        help
+            Timekeeping of the ESP is not very accurate in deep sleep. To prevent very serious clock drift, the time can be synced at every boot.
 
     config METER_MONITOR_MQTT_URI
         string "URI of the MQTT-Broker"
