@@ -55,7 +55,7 @@
 #define CAM_PIN_PCLK        13
 #endif
 
-static const char *TAG = "Camera-Controller";
+static const char *TAG = "[Camera]";
 static const uint8_t CAM_INIT_MAX_TRIES = 10;
 CRGB* ws2812_buffer;
 

@@ -16,7 +16,7 @@
 #define WIFI_FAIL_BIT           BIT1
 
 static EventGroupHandle_t s_wifi_event_group;
-static const char *TAG = "WiFi-Controller";
+static const char *TAG = "[WiFi]";
 static int s_retry_num = 0;
 
 
