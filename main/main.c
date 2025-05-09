@@ -9,20 +9,24 @@
 #include "esp_log.h"
 #include <string.h>
 #include <stdio.h>
-#include "nvs.h"
 #include "cJSON.h"
+#include "nvs.h"
 
+#include "nvs_helper.h"
 #include "camera.h"
 #include "wifi.h"
 #include "sntp.h"
 #include "mqtt.h"
 
+#define TIME_SYNC_EVERY_TIME    CONFIG_METER_MONITOR_SNTP_TIME_SYNC_ALWAYS
 #define METER_MONITOR_NAME      CONFIG_METER_MONITOR_NAME
 
 RTC_DATA_ATTR static struct timeval sleep_enter_time;
-static const char *TAG = "Picture-Task";
+static const char *bootCountKey = "bootCount";
+static const char *TAG = "[Picture-Task]";
 static struct timeval wake_up_time;
-RTC_DATA_ATTR int bootCount;
+bool isCleanBoot = false;
+uint32_t bootCount;
 int8_t wifiRSSI;
 
 
@@ -32,7 +36,7 @@ static void configure_timer_wakeup() {
     // If it is the first boot, the wake_up_time should not be right due to the time not being synced at boot
     // Meaning: Sleep for the predefined amount of time
     // Else: Try to compensate for the time the ESP has been working to minimize the time deviation
-    if (bootCount == 1) {
+    if (isCleanBoot) {
         ESP_LOGI(TAG, "Activating deep sleep Timer for %llu milliseconds", default_sleep_time_ms);
         ESP_ERROR_CHECK(esp_sleep_enable_timer_wakeup(default_sleep_time_ms * 1000));
     } else {
@@ -51,7 +55,7 @@ static void configure_timer_wakeup() {
 
 #ifdef CONFIG_METER_MONITOR_DONE
 #define DONE_PIN                CONFIG_METER_MONITOR_DONE_GPIO
-// Send 'Done' signal to TPL5110 Low-power Timer to shut off power externally
+// Send 'Done'-Signal to TPL5110 Low-power Timer to shut off power externally
 static void send_done_signal() {
     ESP_ERROR_CHECK(gpio_set_direction(DONE_PIN, GPIO_MODE_OUTPUT));
     ESP_LOGI(TAG, "Sending 'Done' signal...");
@@ -85,7 +89,18 @@ static void start_deep_sleep() {
 
 
 static void picture_capture_task() {
+    // -----------------------------------------------------------------------------------------------------------------
+    // ----------------------------------------------- INIT NVS --------------------------------------------------------
+    // -----------------------------------------------------------------------------------------------------------------
+    if (!init_nvs()) return;
+
+    // -----------------------------------------------------------------------------------------------------------------
+    // -------------------------------------- GET BOOT COUNT + INCREMENT -----------------------------------------------
+    // -----------------------------------------------------------------------------------------------------------------
+    read_value(bootCountKey, &bootCount);
     ++bootCount;
+    ESP_LOGI(TAG, "Boot count: %"PRIu32, bootCount);
+
     // -----------------------------------------------------------------------------------------------------------------
     // --------------------------------------- TIMEKEEPING AND LOGGING -------------------------------------------------
     // -----------------------------------------------------------------------------------------------------------------
@@ -94,14 +109,15 @@ static void picture_capture_task() {
     tzset();
     gettimeofday(&wake_up_time, NULL);
 
-    time_t sleep_time_ms = (wake_up_time.tv_sec - sleep_enter_time.tv_sec) * 1000
-                        + (wake_up_time.tv_usec - sleep_enter_time.tv_usec) / 1000;
     switch (esp_sleep_get_wakeup_cause()) {
         case ESP_SLEEP_WAKEUP_TIMER: {
+            time_t sleep_time_ms = (wake_up_time.tv_sec - sleep_enter_time.tv_sec) * 1000
+                                   + (wake_up_time.tv_usec - sleep_enter_time.tv_usec) / 1000;
             ESP_LOGI(TAG, "Wake up from timer. Time spent in deep sleep: %lld milliseconds", sleep_time_ms);
             break;
         }
         default:
+            isCleanBoot = true;
             ESP_LOGI(TAG, "Device is booting...");
     }
 
@@ -110,7 +126,7 @@ static void picture_capture_task() {
     // -----------------------------------------------------------------------------------------------------------------
     connect_wifi();
 
-    // Hole und Speichere RSSI-Informationen zum verbundenen Access-Point
+    // Get and save RSSI information for the connected access point
     wifi_ap_record_t ap_info;
     ESP_ERROR_CHECK(esp_wifi_sta_get_ap_info(&ap_info));
     ESP_LOGI(TAG, "SSID: %s, RSSI: %d dBm", ap_info.ssid, ap_info.rssi);
@@ -124,10 +140,15 @@ static void picture_capture_task() {
     time(&now);
     localtime_r(&now, &timeInfo);
 
-    // Is time set? If not, tm_year will be (2024-1900).
+    // Is the time set? If not, tm_year will be (2024-1900).
     if (timeInfo.tm_year < (2024 - 1900)) {
         ESP_LOGI(TAG, "Time is not set yet. Syncing time over NTP.");
         obtain_time();
+    } else if (TIME_SYNC_EVERY_TIME) {
+        ESP_LOGI(TAG, "Time is set, but may be out of sync. Syncing time at every boot.");
+        obtain_time();
+    } else {
+        ESP_LOGI(TAG, "Time is set and will not be synced again.");
     }
 
     // -----------------------------------------------------------------------------------------------------------------
@@ -162,7 +183,7 @@ static void picture_capture_task() {
     cJSON *root,*picNode;
     root = cJSON_CreateObject();
     cJSON_AddItemToObject(root, "name", cJSON_CreateString(METER_MONITOR_NAME));
-    cJSON_AddNumberToObject(root, "picture_number", bootCount);
+    cJSON_AddNumberToObject(root, "picture_number", (double)bootCount);
     cJSON_AddNumberToObject(root, "WiFi-RSSI", wifiRSSI);
     cJSON_AddItemToObject(root, "picture", picNode=cJSON_CreateObject());
     cJSON_AddStringToObject(picNode, "format", "jpeg");
@@ -188,6 +209,16 @@ static void picture_capture_task() {
     stop_mqtt();
     //disconnect_wifi();
 
+    // -----------------------------------------------------------------------------------------------------------------
+    // ------------------------------------------- STORE BOOT COUNT ----------------------------------------------------
+    // -----------------------------------------------------------------------------------------------------------------
+    if (!write_value(bootCountKey, bootCount)) return;
+
+    // -----------------------------------------------------------------------------------------------------------------
+    // ----------------------------------------------- CLOSE NVS -------------------------------------------------------
+    // -----------------------------------------------------------------------------------------------------------------
+    close_nvs();
+
 #ifdef CONFIG_METER_MONITOR_DONE
     // -----------------------------------------------------------------------------------------------------------------
     // ----------------------------------------- Disable power supply --------------------------------------------------
@@ -195,7 +226,7 @@ static void picture_capture_task() {
     send_done_signal();
 #endif
 
-    // After this, the power should be cut off externally, but if not go to deep sleep.
+    // After this, the power should be cut off externally, but if not, go into deepsleep.
     // -----------------------------------------------------------------------------------------------------------------
     // ---------------------------------------------- START SLEEP ------------------------------------------------------
     // -----------------------------------------------------------------------------------------------------------------

@@ -15,7 +15,7 @@
 #define MQTT_USERNAME           CONFIG_METER_MONITOR_MQTT_USERNAME
 #define MQTT_PASSWORD           CONFIG_METER_MONITOR_MQTT_PASSWORD
 
-static const char *TAG = "MQTT-Controller";
+static const char *TAG = "[MQTT]";
 esp_mqtt_client_handle_t client;
 const int secondsToTry = 50;
 bool brokerConnected = false;

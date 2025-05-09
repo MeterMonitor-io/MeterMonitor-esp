@@ -3,7 +3,7 @@
 
 uint16_t *dma_buffer;
 CRGB *ws28xx_pixels;
-static const char *TAG = "WS28xx-Controller";
+static const char *TAG = "[WS28xx]";
 static int n_of_leds, reset_delay, dma_buf_size;
 led_strip_model_t led_model;
 
@@ -42,7 +42,7 @@ esp_err_t ws28xx_init(int pin, led_strip_model_t model, int num_of_leds,
     // Increase if something breaks. Values are less than recommended in
     // datasheets but seem stable
     reset_delay = (model == WS2812B) ? 3 : 30;
-    // 12 bytes for each led + bytes for initial zero and reset state
+    // 12 bytes for each LED plus bytes for the initial zero and reset state
     dma_buf_size = n_of_leds * 12 + (reset_delay + 1) * 2;
     ws28xx_pixels = malloc(sizeof(CRGB) * n_of_leds);
     if (ws28xx_pixels == NULL) {

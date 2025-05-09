@@ -8,7 +8,7 @@
 
 #define SNTP_SERVER         CONFIG_METER_MONITOR_SNTP_TIME_SERVER
 
-static const char *TAG = "SNTP-Controller";
+static const char *TAG = "[SNTP]";
 const int maxRetries = 20;
 
 
