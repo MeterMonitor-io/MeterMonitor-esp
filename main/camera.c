@@ -1,19 +1,11 @@
 #include "camera.h"
 
-#include <esp_system.h>
-#include "esp_camera.h"
-#include "esp_ws28xx.h"
-#include "driver/gpio.h"
-#include "freertos/task.h"
-#include <esp_log.h>
 #include <driver/rtc_io.h>
+#include "driver/gpio.h"
+#include "esp_camera.h"
+#include <esp_log.h>
 
-#define LED_NUM             CONFIG_METER_MONITOR_LED_STRIP_LED_COUNT
-#define LED_GPIO            CONFIG_METER_MONITOR_LED_STRIP_GPIO
-#define LED_STRIP_R         CONFIG_METER_MONITOR_LED_STRIP_R
-#define LED_STRIP_G         CONFIG_METER_MONITOR_LED_STRIP_G
-#define LED_STRIP_B         CONFIG_METER_MONITOR_LED_STRIP_B
-#define FLASH_LED_GPIO      CONFIG_METER_MONITOR_FLASH_GPIO
+#include "configurations.h"
 
 #ifdef CONFIG_METER_MONITOR_BOARD_ESP32_CAM
 // AiThinker ESP32-Cam PIN Map
@@ -57,7 +49,6 @@
 
 static const char *TAG = "[Camera]";
 static const uint8_t CAM_INIT_MAX_TRIES = 10;
-CRGB* ws2812_buffer;
 
 static camera_config_t camera_config = {
     .pin_pwdn = CAM_PIN_PWDN,
@@ -86,23 +77,13 @@ static camera_config_t camera_config = {
     .fb_count = 1,
     .fb_location = CAMERA_FB_IN_PSRAM,
     .grab_mode = CAMERA_GRAB_WHEN_EMPTY,
-#if CONFIG_MONITOR_CAMERA_CAMERA_FRAME_SIZE_QQVGA
-    .frame_size = FRAMESIZE_QQVGA,
-#elif CONFIG_MONITOR_CAMERA_CAMERA_FRAME_SIZE_QVGA
-    .frame_size = FRAMESIZE_QVGA,
-#elif CONFIG_METER_MONITOR_CAMERA_FRAME_SIZE_VGA
-    .frame_size = FRAMESIZE_VGA,
-#elif CONFIG_METER_MONITOR_CAMERA_FRAME_SIZE_SVGA
-    .frame_size = FRAMESIZE_SVGA,
-#elif CONFIG_METER_MONITOR_CAMERA_FRAME_SIZE_XGA
-    .frame_size = FRAMESIZE_XGA,
-#elif CONFIG_METER_MONITOR_CAMERA_FRAME_SIZE_SXGA
-    .frame_size = FRAMESIZE_SXGA,
-#elif CONFIG_METER_MONITOR_CAMERA_FRAME_SIZE_UXGA
-    .frame_size = FRAMESIZE_UXGA,
-#endif
+    .frame_size = FRAMESIZE_INVALID
 };
 
+void set_camera_resolution(const framesize_t frameSize) {
+    camera_config.frame_size = frameSize;
+    ESP_LOGI(TAG, "Camera resolution set to %d", camera_config.frame_size);
+}
 
 void set_camera_parameters() {
     sensor_t *s = esp_camera_sensor_get();
@@ -116,13 +97,15 @@ void set_camera_parameters() {
 }
 
 esp_err_t init_camera(void) {
+    esp_log_level_set(TAG, ESP_LOG_INFO);
     ESP_LOGI(TAG, "Initializing camera");
-    esp_err_t err;
+    esp_err_t err = ESP_FAIL;
+    set_camera_resolution(config.camera_frame_size);
     for (int i = 1; i <= CAM_INIT_MAX_TRIES; ++i) {
         err = esp_camera_init(&camera_config);
 
         if(err == ESP_OK) break;
-        else ESP_LOGW(TAG, "Esp32 Camera Init failed on try (%d/%d)", i, CAM_INIT_MAX_TRIES);
+        ESP_LOGW(TAG, "Esp32 Camera Init failed on try (%d/%d)", i, CAM_INIT_MAX_TRIES);
     }
 
     if (err != ESP_OK) {
@@ -135,7 +118,7 @@ esp_err_t init_camera(void) {
 
 esp_err_t free_camera(void) {
     ESP_LOGI(TAG, "Freeing camera");
-    esp_err_t err = esp_camera_deinit();
+    const esp_err_t err = esp_camera_deinit();
     if (err != ESP_OK) {
         ESP_LOGE(TAG, "Camera freeing failed!");
         return err;
@@ -145,34 +128,22 @@ esp_err_t free_camera(void) {
 }
 
 camera_fb_t* take_picture(void) {
-#ifdef CONFIG_METER_MONITOR_FLASH
-    ESP_ERROR_CHECK(rtc_gpio_hold_dis(FLASH_LED_GPIO));
-    ESP_ERROR_CHECK(gpio_reset_pin(FLASH_LED_GPIO));
-    ESP_ERROR_CHECK(gpio_set_direction(FLASH_LED_GPIO, GPIO_MODE_OUTPUT));
-    //ESP_ERROR_CHECK(gpio_set_pull_mode(FLASH_LED_GPIO, GPIO_PULLDOWN_ONLY));
-    ESP_ERROR_CHECK(gpio_set_level(FLASH_LED_GPIO, 1));
-    ESP_LOGI(TAG, "Flash turned on successfully");
-#endif
-#ifdef CONFIG_METER_MONITOR_LED_STRIP
-    ESP_ERROR_CHECK(ws28xx_init(LED_GPIO, WS2812B, LED_NUM, &ws2812_buffer));
-    ws28xx_fill_all((CRGB){.r=LED_STRIP_R, .g=LED_STRIP_G, .b=LED_STRIP_B});
-    ESP_ERROR_CHECK(ws28xx_update());
-    ESP_LOGI(TAG, "LED-Strip turned on successfully");
-#endif
+    if (config.flash_light) {
+        ESP_ERROR_CHECK(rtc_gpio_hold_dis(config.flash_gpio));
+        ESP_ERROR_CHECK(gpio_reset_pin(config.flash_gpio));
+        ESP_ERROR_CHECK(gpio_set_direction(config.flash_gpio, GPIO_MODE_OUTPUT));
+        //ESP_ERROR_CHECK(gpio_set_pull_mode(FLASH_LED_GPIO, GPIO_PULLDOWN_ONLY));
+        ESP_ERROR_CHECK(gpio_set_level(config.flash_gpio, 1));
+        ESP_LOGI(TAG, "Turned flash on");
+    }
 
     ESP_LOGI(TAG, "Taking picture...");
     camera_fb_t *picture = esp_camera_fb_get();
 
-#ifdef CONFIG_METER_MONITOR_FLASH
-    ESP_ERROR_CHECK(gpio_set_level(FLASH_LED_GPIO, 0));
-    ESP_ERROR_CHECK(rtc_gpio_isolate(FLASH_LED_GPIO)); // Disable internal 47K pullup on LED to prevent drain
-    ESP_LOGI(TAG, "Flash turned off successfully");
-#endif
-#ifdef CONFIG_METER_MONITOR_LED_STRIP
-    ws28xx_fill_all((CRGB){.r=0, .g=0, .b=0});
-    ESP_ERROR_CHECK(ws28xx_update());
-    ESP_LOGI(TAG, "LED-Strip turned off successfully");
-    ESP_ERROR_CHECK(ws28xx_free());
-#endif
+    if (config.flash_light) {
+        ESP_ERROR_CHECK(gpio_set_level(config.flash_gpio, 0));
+        ESP_ERROR_CHECK(rtc_gpio_isolate(config.flash_gpio)); // Disable internal 47K pullup on LED to prevent drain
+        ESP_LOGI(TAG, "Turned flash off");
+    }
     return picture;
 }

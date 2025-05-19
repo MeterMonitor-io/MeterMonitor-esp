@@ -21,7 +21,7 @@ menu "MeterMonitor config"
 
     config METER_MONITOR_NAME
         string "Unique Identifying meter name"
-        default "Hauptzaehler"
+        default "UndefinedMeter"
         help
             The name of the meter, this camera will track. It is used for identification at the classifier and as a MQTT-Topic.
 
@@ -67,7 +67,7 @@ menu "MeterMonitor config"
         help
             Port to connect on to the MQTT-Broker
 
-    config METER_MONITOR_TOPIC_BASE
+    config METER_MONITOR_MQTT_TOPIC_BASE
         string "MQTT-Topic for publishing"
         default "MeterMonitor/"
         help
