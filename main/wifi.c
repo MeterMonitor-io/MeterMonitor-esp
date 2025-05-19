@@ -1,5 +1,7 @@
 #include "wifi.h"
 
+#include "configurations.h"
+
 #include "freertos/FreeRTOS.h"
 #include "freertos/event_groups.h"
 #include "esp_system.h"
@@ -9,9 +11,6 @@
 #include "esp_log.h"
 #include <string.h>
 
-#define ESP_WIFI_RETRY_NUM      CONFIG_METER_MONITOR_WIFI_MAXIMUM_RETRY
-#define ESP_WIFI_PASS           CONFIG_METER_MONITOR_WIFI_PASSWORD
-#define ESP_WIFI_SSID           CONFIG_METER_MONITOR_WIFI_SSID
 #define WIFI_CONNECTED_BIT      BIT0
 #define WIFI_FAIL_BIT           BIT1
 
@@ -24,7 +23,7 @@ static void event_handler(__attribute__((unused)) void* arg, esp_event_base_t ev
     if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_START) {
         esp_wifi_connect();
     } else if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_DISCONNECTED) {
-        if (s_retry_num < ESP_WIFI_RETRY_NUM) {
+        if (s_retry_num < config.wifi_maximum_retry) {
             esp_wifi_connect();
             s_retry_num++;
             ESP_LOGI(TAG, "retry to connect to the AP");
@@ -84,20 +83,20 @@ bool connect_wifi(void) {
 
     wifi_config_t wifi_config = {
             .sta = {
-                    .ssid = ESP_WIFI_SSID,
-                    .password = ESP_WIFI_PASS,
                     .scan_method = WIFI_ALL_CHANNEL_SCAN,
                     .sort_method = WIFI_CONNECT_AP_BY_SIGNAL,
                     .threshold.rssi = -127,
                     .threshold.authmode = WIFI_AUTH_OPEN,
             },
     };
+    strncpy((char *)wifi_config.sta.ssid, config.wifi_ssid, sizeof(wifi_config.sta.ssid));
+    strncpy((char *)wifi_config.sta.password, config.wifi_password, sizeof(wifi_config.sta.password));
 
     ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
     ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &wifi_config));
     ESP_ERROR_CHECK(esp_wifi_start());
 
-    // Waiting until either the connection is established (WIFI_CONNECTED_BIT) or connection failed for
+    // Waiting until either the connection is established (WIFI_CONNECTED_BIT) or the connection failed for
     // the maximum number of re-tries (WIFI_FAIL_BIT). The bits are set by event_handler()
     EventBits_t bits = xEventGroupWaitBits(s_wifi_event_group,
                                            WIFI_CONNECTED_BIT | WIFI_FAIL_BIT,
@@ -107,10 +106,10 @@ bool connect_wifi(void) {
 
     // xEventGroupWaitBits() returns the bits before the call returned; hence we can test which event actually happened.
     if (bits & WIFI_CONNECTED_BIT) {
-        ESP_LOGI(TAG, "Connected to AP with SSID: %s", ESP_WIFI_SSID);
+        ESP_LOGI(TAG, "Connected to AP with SSID: %s", config.wifi_ssid);
         return true;
     } else if (bits & WIFI_FAIL_BIT) {
-        ESP_LOGI(TAG, "Failed to connect to SSID:%s", ESP_WIFI_SSID);
+        ESP_LOGE(TAG, "Failed to connect to SSID:%s", config.wifi_ssid);
     } else {
         ESP_LOGE(TAG, "UNEXPECTED ERROR");
     }

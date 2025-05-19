@@ -1,12 +1,11 @@
 #include "sntp.h"
 
+#include "configurations.h"
+
 #include "esp_netif_sntp.h"
 #include "nvs_flash.h"
-#include "esp_attr.h"
 #include "esp_log.h"
 #include <time.h>
-
-#define SNTP_SERVER         CONFIG_METER_MONITOR_SNTP_TIME_SERVER
 
 static const char *TAG = "[SNTP]";
 const int maxRetries = 20;
@@ -20,10 +19,10 @@ void time_sync_notification_cb(__attribute__((unused)) struct timeval *tv) {
 void obtain_time(void) {
     ESP_LOGI(TAG, "Initializing and starting SNTP");
 
-    // Init SNTP with server given in config
-    esp_sntp_config_t config = ESP_NETIF_SNTP_DEFAULT_CONFIG(SNTP_SERVER);
-    config.sync_cb = time_sync_notification_cb;
-    esp_netif_sntp_init(&config);
+    // Init SNTP with the server given in config
+    esp_sntp_config_t sntp_config = ESP_NETIF_SNTP_DEFAULT_CONFIG(config.sntp_time_server);
+    sntp_config.sync_cb = time_sync_notification_cb;
+    esp_netif_sntp_init(&sntp_config);
 
     // wait for time to be set
     time_t now = 0;
