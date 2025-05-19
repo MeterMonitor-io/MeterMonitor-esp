@@ -12,7 +12,7 @@
 
 static const char *TAG = "[MQTT]";
 esp_mqtt_client_handle_t client;
-const int secondsToTry = 25;
+const int secondsToTry = 30;
 bool brokerConnected = false;
 bool messageSent = false;
 
@@ -26,7 +26,7 @@ static void log_error_if_nonzero(const char *message, int error_code) {
 
 static void mqtt_event_handler(__attribute__((unused)) void *handler_args, esp_event_base_t base, int32_t event_id, void *event_data) {
     ESP_LOGD(TAG, "Event dispatched from event loop base=%s, event_id=%" PRIi32 "", base, event_id);
-    esp_mqtt_event_handle_t event = event_data;
+    const esp_mqtt_event_handle_t event = event_data;
     switch ((esp_mqtt_event_id_t)event_id) {
         case MQTT_EVENT_BEFORE_CONNECT:
             ESP_LOGI(TAG, "MQTT_EVENT_BEFORE_CONNECT");

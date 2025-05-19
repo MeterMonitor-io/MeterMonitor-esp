@@ -34,7 +34,7 @@
     #define CONFIG_METER_MONITOR_SNTP_TIME_SERVER       "pool.ntp.org"
 #endif
 #ifndef CONFIG_METER_MONITOR_SNTP_TIME_SYNC_ALWAYS
-    #define CONFIG_METER_MONITOR_SNTP_TIME_SYNC_ALWAYS  true
+    #define CONFIG_METER_MONITOR_SNTP_TIME_SYNC_ALWAYS  false
 #endif
 //----------------------------------------------------- MQTT defines ----------
 #ifndef CONFIG_METER_MONITOR_MQTT_URI

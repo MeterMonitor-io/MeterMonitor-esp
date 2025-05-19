@@ -3,7 +3,6 @@
 #include <driver/rtc_io.h>
 #include "driver/gpio.h"
 #include "esp_camera.h"
-#include "esp_ws28xx.h"
 #include <esp_log.h>
 
 #include "configurations.h"
@@ -50,7 +49,6 @@
 
 static const char *TAG = "[Camera]";
 static const uint8_t CAM_INIT_MAX_TRIES = 10;
-CRGB* ws2812_buffer;
 
 static camera_config_t camera_config = {
     .pin_pwdn = CAM_PIN_PWDN,
@@ -107,7 +105,7 @@ esp_err_t init_camera(void) {
         err = esp_camera_init(&camera_config);
 
         if(err == ESP_OK) break;
-        else ESP_LOGW(TAG, "Esp32 Camera Init failed on try (%d/%d)", i, CAM_INIT_MAX_TRIES);
+        ESP_LOGW(TAG, "Esp32 Camera Init failed on try (%d/%d)", i, CAM_INIT_MAX_TRIES);
     }
 
     if (err != ESP_OK) {
@@ -120,7 +118,7 @@ esp_err_t init_camera(void) {
 
 esp_err_t free_camera(void) {
     ESP_LOGI(TAG, "Freeing camera");
-    esp_err_t err = esp_camera_deinit();
+    const esp_err_t err = esp_camera_deinit();
     if (err != ESP_OK) {
         ESP_LOGE(TAG, "Camera freeing failed!");
         return err;
