@@ -2,7 +2,6 @@
 #define NVS_HELPER_H
 
 #include <nvs_flash.h>
-#include <stdint.h>
 #include <nvs.h>
 
 extern nvs_handle persistent_storage_handle;
