@@ -56,7 +56,7 @@ static void configure_timer_wakeup() {
 static void send_done_signal() {
     ESP_ERROR_CHECK(gpio_set_direction(config.done_gpio, GPIO_MODE_OUTPUT));
     ESP_LOGI(TAG, "Sending 'Done' signal...");
-    for (int i = 1; i <= 10; ++i) {
+    for (int i = 1; i <= 3; ++i) {
         ESP_LOGI(TAG, "Sending signal #%i", i);
         ESP_ERROR_CHECK(gpio_set_level(config.done_gpio, 1));
         vTaskDelay(pdMS_TO_TICKS(200));
@@ -227,11 +227,14 @@ static void picture_capture_task() {
     cJSON_AddStringToObject(picNode, "data", (char *) base64_data);
 
     // Send the message via MQTT
-    publish_message(cJSON_Print(root));
+    char *msg_string = cJSON_Print(root);
+    publish_message(msg_string);
 
     // -----------------------------------------------------------------------------------------------------------------
     // ------------------------------------------ Clean up workspace! --------------------------------------------------
     // -----------------------------------------------------------------------------------------------------------------
+    cJSON_Delete(root);
+    cJSON_free(msg_string);
     esp_camera_fb_return(pic);
     free(base64_data);
 
