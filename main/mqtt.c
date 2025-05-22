@@ -69,7 +69,6 @@ void start_mqtt(void) {
     esp_mqtt_client_config_t mqtt_cfg = {
         .broker.address.uri = config.mqtt_uri,
         .broker.address.port = config.mqtt_port,
-        .session.disable_clean_session = true,
         .credentials.client_id = config.meter_monitor_name
     };
     if (config.mqtt_username_defined) {
