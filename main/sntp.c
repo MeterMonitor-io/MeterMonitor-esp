@@ -8,7 +8,7 @@
 #include <time.h>
 
 static const char *TAG = "[SNTP]";
-const int maxRetries = 20;
+const int maxRetries = 10;
 
 
 void time_sync_notification_cb(__attribute__((unused)) struct timeval *tv) {
@@ -17,6 +17,7 @@ void time_sync_notification_cb(__attribute__((unused)) struct timeval *tv) {
 
 
 void obtain_time(void) {
+    esp_log_level_set(TAG, ESP_LOG_INFO);
     ESP_LOGI(TAG, "Initializing and starting SNTP");
 
     // Init SNTP with the server given in config
@@ -28,7 +29,7 @@ void obtain_time(void) {
     time_t now = 0;
     struct tm timeInfo = { 0 };
     int retry = 0;
-    while (esp_netif_sntp_sync_wait(2000 / portTICK_PERIOD_MS) == ESP_ERR_TIMEOUT && ++retry < maxRetries) {
+    while (esp_netif_sntp_sync_wait(pdMS_TO_TICKS(1000)) == ESP_ERR_TIMEOUT && ++retry < maxRetries) {
         ESP_LOGI(TAG, "Waiting for system time to be set... (%d/%d)", retry, maxRetries);
     }
 

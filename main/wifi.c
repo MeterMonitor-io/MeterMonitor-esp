@@ -83,7 +83,7 @@ bool connect_wifi(void) {
 
     wifi_config_t wifi_config = {
             .sta = {
-                    .scan_method = WIFI_ALL_CHANNEL_SCAN,
+                    .scan_method = WIFI_FAST_SCAN,
                     .sort_method = WIFI_CONNECT_AP_BY_SIGNAL,
                     .threshold.rssi = -127,
                     .threshold.authmode = WIFI_AUTH_OPEN,
