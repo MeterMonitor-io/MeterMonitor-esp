@@ -35,17 +35,17 @@ static void configure_timer_wakeup() {
     // Meaning: Sleep for the predefined amount of time
     // Else: Try to compensate for the time the ESP has been working to minimize the time deviation
     if (isCleanBoot) {
-        ESP_LOGI(TAG, "Activating deep sleep Timer for %llu milliseconds", default_sleep_time_ms);
+        ESP_LOGI(TAG, "Activating deep sleep timer for %d minutes", config.sleep_time_min);
         ESP_ERROR_CHECK(esp_sleep_enable_timer_wakeup(default_sleep_time_ms * 1000));
     } else {
         struct timeval now;
         gettimeofday(&now, NULL);
-        const time_t active_time_ms = (now.tv_sec - wake_up_time.tv_sec) * 1000
-                                      + (now.tv_usec - wake_up_time.tv_usec) / 1000;
+        const time_t active_time_ms = (now.tv_sec - wake_up_time.tv_sec) * 1000 +
+                                      (now.tv_usec - wake_up_time.tv_usec) / 1000;
         ESP_LOGI(TAG, "The device was active for %lld milliseconds", active_time_ms);
 
         const time_t actual_sleep_time_ms = default_sleep_time_ms - active_time_ms;
-        ESP_LOGI(TAG, "Theoretically timer should be %llu milliseconds", default_sleep_time_ms);
+        ESP_LOGI(TAG, "Theoretically timer should be %d minutes", config.sleep_time_min);
         ESP_LOGI(TAG, "Activating deep sleep Timer for %lld milliseconds", actual_sleep_time_ms);
         ESP_ERROR_CHECK(esp_sleep_enable_timer_wakeup(actual_sleep_time_ms * 1000));
     }
@@ -57,7 +57,7 @@ static void send_done_signal() {
     ESP_ERROR_CHECK(gpio_set_direction(config.done_gpio, GPIO_MODE_OUTPUT));
     ESP_LOGI(TAG, "Sending 'Done' signal...");
     for (int i = 1; i <= 3; ++i) {
-        ESP_LOGI(TAG, "Sending signal #%i", i);
+        ESP_LOGI(TAG, "Sending signal #%i on GPIO%d", i, config.done_gpio);
         ESP_ERROR_CHECK(gpio_set_level(config.done_gpio, 1));
         vTaskDelay(pdMS_TO_TICKS(200));
         ESP_ERROR_CHECK(gpio_set_level(config.done_gpio, 0));

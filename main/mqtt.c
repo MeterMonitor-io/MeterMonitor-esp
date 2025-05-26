@@ -25,7 +25,7 @@ static void log_error_if_nonzero(const char *message, const int error_code) {
 
 
 static void mqtt_event_handler(__attribute__((unused)) void *handler_args, esp_event_base_t base, const int32_t event_id, void *event_data) {
-    ESP_LOGD(TAG, "Event dispatched from event loop base=%s, event_id=%" PRIi32 "", base, event_id);
+    ESP_LOGD(TAG, "Event dispatched from event loop base=%s, event_id=%ld", base, event_id);
     esp_mqtt_event_handle_t event = event_data;
     switch ((esp_mqtt_event_id_t)event_id) {
         case MQTT_EVENT_BEFORE_CONNECT:
