@@ -69,7 +69,7 @@ static char * read_config_file_into_buffer(size_t *out_size) {
         fclose(config_file);
         return NULL;
     }
-    ESP_LOGI(TAG, "Datei beinhaltet %ld Bytes", len);
+    ESP_LOGD(TAG, "Datei beinhaltet %ld Bytes", len);
 
     char *buf = malloc(len + 1);
     if (!buf) {
@@ -97,115 +97,115 @@ static void extractAndSetInConfig(const cJSON *json) {
     item = cJSON_GetObjectItemCaseSensitive(json, "meter_monitor_name");
     if (cJSON_IsString(item) && item->valuestring != NULL) {
         config_set_meter_monitor_name(item->valuestring);
-        ESP_LOGI(TAG, "Set meter_monitor_name to: %s", config.meter_monitor_name);
+        ESP_LOGD(TAG, "Set meter_monitor_name to: %s", config.meter_monitor_name);
     }
 
     item = cJSON_GetObjectItemCaseSensitive(json, "sleep_time_min");
     if (cJSON_IsNumber(item)) {
         config_set_sleep_time_min(item->valueint);
-        ESP_LOGI(TAG, "Set sleep_time_min to: %d", config.sleep_time_min);
+        ESP_LOGD(TAG, "Set sleep_time_min to: %d", config.sleep_time_min);
     }
 
     item = cJSON_GetObjectItemCaseSensitive(json, "wifi_ssid");
     if (cJSON_IsString(item) && item->valuestring != NULL) {
         config_set_wifi_ssid(item->valuestring);
-        ESP_LOGI(TAG, "Set wifi_ssid to: %s", config.wifi_ssid);
+        ESP_LOGD(TAG, "Set wifi_ssid to: %s", config.wifi_ssid);
     }
 
     item = cJSON_GetObjectItemCaseSensitive(json, "wifi_password");
     if (cJSON_IsString(item) && (item->valuestring != NULL)) {
         config_set_wifi_password(item->valuestring);
-        ESP_LOGI(TAG, "Set wifi_password to: %s", config.wifi_password);
+        ESP_LOGD(TAG, "Set wifi_password to: %s", config.wifi_password);
     }
 
     item = cJSON_GetObjectItemCaseSensitive(json, "wifi_maximum_retry");
     if (cJSON_IsNumber(item)) {
         config_set_wifi_maximum_retry(item->valueint);
-        ESP_LOGI(TAG, "Set wifi_maximum_retry to: %d", config.wifi_maximum_retry);
+        ESP_LOGD(TAG, "Set wifi_maximum_retry to: %d", config.wifi_maximum_retry);
     }
 
     item = cJSON_GetObjectItemCaseSensitive(json, "sntp_time_server");
     if (cJSON_IsString(item) && item->valuestring != NULL) {
         config_set_sntp_time_server(item->valuestring);
-        ESP_LOGI(TAG, "Set sntp_time_server to: %s", config.sntp_time_server);
+        ESP_LOGD(TAG, "Set sntp_time_server to: %s", config.sntp_time_server);
     }
 
     item = cJSON_GetObjectItemCaseSensitive(json, "sntp_time_sync_always");
     if (cJSON_IsBool(item)) {
         config_set_sntp_time_sync_always(cJSON_IsTrue(item));
-        ESP_LOGI(TAG, "Set sntp_time_sync_always to: %s", config.sntp_time_sync_always ? "true" : "false");
+        ESP_LOGD(TAG, "Set sntp_time_sync_always to: %s", config.sntp_time_sync_always ? "true" : "false");
     }
 
     item = cJSON_GetObjectItemCaseSensitive(json, "mqtt_uri");
     if (cJSON_IsString(item) && item->valuestring != NULL) {
         config_set_mqtt_uri(item->valuestring);
-        ESP_LOGI(TAG, "Set mqtt_uri to: %s", config.mqtt_uri);
+        ESP_LOGD(TAG, "Set mqtt_uri to: %s", config.mqtt_uri);
     }
 
     item = cJSON_GetObjectItemCaseSensitive(json, "mqtt_port");
     if (cJSON_IsNumber(item)) {
         config_set_mqtt_port(item->valueint);
-        ESP_LOGI(TAG, "Set mqtt_port to: %d", config.mqtt_port);
+        ESP_LOGD(TAG, "Set mqtt_port to: %d", config.mqtt_port);
     }
 
     item = cJSON_GetObjectItemCaseSensitive(json, "mqtt_topic_base");
     if (cJSON_IsString(item) && item->valuestring != NULL) {
         config_set_mqtt_topic_base(item->valuestring);
-        ESP_LOGI(TAG, "Set mqtt_topic_base to: %s", config.mqtt_topic_base);
+        ESP_LOGD(TAG, "Set mqtt_topic_base to: %s", config.mqtt_topic_base);
     }
 
     item = cJSON_GetObjectItemCaseSensitive(json, "mqtt_username_defined");
     if (cJSON_IsBool(item)) {
         config_set_mqtt_username_defined(cJSON_IsTrue(item));
-        ESP_LOGI(TAG, "Set mqtt_username_defined to: %s", config.mqtt_username_defined ? "true" : "false");
+        ESP_LOGD(TAG, "Set mqtt_username_defined to: %s", config.mqtt_username_defined ? "true" : "false");
     }
 
     item = cJSON_GetObjectItemCaseSensitive(json, "mqtt_username");
     if (cJSON_IsString(item) && item->valuestring != NULL) {
         config_set_mqtt_username(item->valuestring);
-        ESP_LOGI(TAG, "Set mqtt_username to: %s", config.mqtt_username);
+        ESP_LOGD(TAG, "Set mqtt_username to: %s", config.mqtt_username);
     }
 
     item = cJSON_GetObjectItemCaseSensitive(json, "mqtt_password_defined");
     if (cJSON_IsBool(item)) {
         config_set_mqtt_password_defined(cJSON_IsTrue(item));
-        ESP_LOGI(TAG, "Set mqtt_password_defined to: %s", config.mqtt_password_defined ? "true" : "false");
+        ESP_LOGD(TAG, "Set mqtt_password_defined to: %s", config.mqtt_password_defined ? "true" : "false");
     }
 
     item = cJSON_GetObjectItemCaseSensitive(json, "mqtt_password");
     if (cJSON_IsString(item) && item->valuestring != NULL) {
         config_set_mqtt_password(item->valuestring);
-        ESP_LOGI(TAG, "Set mqtt_password to: %s", config.mqtt_password);
+        ESP_LOGD(TAG, "Set mqtt_password to: %s", config.mqtt_password);
     }
 
     item = cJSON_GetObjectItemCaseSensitive(json, "flash_light");
     if (cJSON_IsBool(item)) {
         config_set_flash_light(cJSON_IsTrue(item));
-        ESP_LOGI(TAG, "Set flash_light to: %s", config.flash_light ? "true" : "false");
+        ESP_LOGD(TAG, "Set flash_light to: %s", config.flash_light ? "true" : "false");
     }
 
     item = cJSON_GetObjectItemCaseSensitive(json, "flash_gpio");
     if (cJSON_IsNumber(item)) {
         config_set_flash_gpio(item->valueint);
-        ESP_LOGI(TAG, "Set flash_gpio to: %d", config.flash_gpio);
+        ESP_LOGD(TAG, "Set flash_gpio to: %d", config.flash_gpio);
     }
 
     item = cJSON_GetObjectItemCaseSensitive(json, "led_strip");
     if (cJSON_IsBool(item)) {
         config_set_led_strip(cJSON_IsTrue(item));
-        ESP_LOGI(TAG, "Set led_strip to: %s", config.led_strip ? "true" : "false");
+        ESP_LOGD(TAG, "Set led_strip to: %s", config.led_strip ? "true" : "false");
     }
 
     item = cJSON_GetObjectItemCaseSensitive(json, "led_strip_gpio");
     if (cJSON_IsNumber(item)) {
         config_set_led_strip_gpio(item->valueint);
-        ESP_LOGI(TAG, "Set led_strip_gpio to: %d", config.led_strip_gpio);
+        ESP_LOGD(TAG, "Set led_strip_gpio to: %d", config.led_strip_gpio);
     }
 
     item = cJSON_GetObjectItemCaseSensitive(json, "led_strip_count");
     if (cJSON_IsNumber(item)) {
         config_set_led_strip_count(item->valueint);
-        ESP_LOGI(TAG, "Set led_strip_count to: %d", config.led_strip_count);
+        ESP_LOGD(TAG, "Set led_strip_count to: %d", config.led_strip_count);
     }
 
     item = cJSON_GetObjectItemCaseSensitive(json, "led_r");
@@ -218,7 +218,7 @@ static void extractAndSetInConfig(const cJSON *json) {
             if (cJSON_IsNumber(item)) {
                 const int led_b = item->valueint;
                 config_set_led_color(led_r, led_g, led_b);
-                ESP_LOGI(TAG, "Set led_r:%d, led_g:%d, led_b:%d", config.led_r, config.led_g, config.led_b);
+                ESP_LOGD(TAG, "Set led_r:%d, led_g:%d, led_b:%d", config.led_r, config.led_g, config.led_b);
             }
         }
     }
@@ -227,25 +227,25 @@ static void extractAndSetInConfig(const cJSON *json) {
     if (cJSON_IsString(item) && item->valuestring != NULL) {
         if (strcmp(item->valuestring, "QQVGA") == 0) {
             config_set_camera_frame_size(1);
-            ESP_LOGI(TAG, "Set camera_frame_size to: FRAMESIZE_QQVGA");
+            ESP_LOGD(TAG, "Set camera_frame_size to: FRAMESIZE_QQVGA");
         } else if (strcmp(item->valuestring, "QVGA") == 0) {
             config_set_camera_frame_size(6);
-            ESP_LOGI(TAG, "Set camera_frame_size to: FRAMESIZE_QVGA");
+            ESP_LOGD(TAG, "Set camera_frame_size to: FRAMESIZE_QVGA");
         } else if (strcmp(item->valuestring, "VGA") == 0) {
             config_set_camera_frame_size(10);
-            ESP_LOGI(TAG, "Set camera_frame_size to: FRAMESIZE_VGA");
+            ESP_LOGD(TAG, "Set camera_frame_size to: FRAMESIZE_VGA");
         } else if (strcmp(item->valuestring, "SVGA") == 0) {
             config_set_camera_frame_size(11);
-            ESP_LOGI(TAG, "Set camera_frame_size to: FRAMESIZE_SVGA");
+            ESP_LOGD(TAG, "Set camera_frame_size to: FRAMESIZE_SVGA");
         } else if (strcmp(item->valuestring, "XGA") == 0) {
             config_set_camera_frame_size(12);
-            ESP_LOGI(TAG, "Set camera_frame_size to: FRAMESIZE_XGA");
+            ESP_LOGD(TAG, "Set camera_frame_size to: FRAMESIZE_XGA");
         } else if (strcmp(item->valuestring, "SXGA") == 0) {
             config_set_camera_frame_size(14);
-            ESP_LOGI(TAG, "Set camera_frame_size to: FRAMESIZE_SXGA");
+            ESP_LOGD(TAG, "Set camera_frame_size to: FRAMESIZE_SXGA");
         } else if (strcmp(item->valuestring, "UXGA") == 0) {
             config_set_camera_frame_size(15);
-            ESP_LOGI(TAG, "Set camera_frame_size to: FRAMESIZE_UXGA");
+            ESP_LOGD(TAG, "Set camera_frame_size to: FRAMESIZE_UXGA");
         } else {
             ESP_LOGW(TAG, "Unknown Frame-size: %s", item->valuestring);
         }
@@ -254,14 +254,16 @@ static void extractAndSetInConfig(const cJSON *json) {
     item = cJSON_GetObjectItemCaseSensitive(json, "send_done");
     if (cJSON_IsBool(item)) {
         config_set_send_done(cJSON_IsTrue(item));
-        ESP_LOGI(TAG, "Set send_done to: %s", config.send_done ? "true" : "false");
+        ESP_LOGD(TAG, "Set send_done to: %s", config.send_done ? "true" : "false");
     }
 
     item = cJSON_GetObjectItemCaseSensitive(json, "done_gpio");
     if (cJSON_IsNumber(item)) {
         config_set_done_gpio(item->valueint);
-        ESP_LOGI(TAG, "Set done_gpio to: %d", config.done_gpio);
+        ESP_LOGD(TAG, "Set done_gpio to: %d", config.done_gpio);
     }
+
+    ESP_LOGI(TAG, "All settings were successfully extracted from file");
 }
 
 /**

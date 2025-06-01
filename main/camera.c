@@ -48,7 +48,7 @@
 #endif
 
 static const char *TAG = "[Camera]";
-static const uint8_t CAM_INIT_MAX_TRIES = 10;
+static const uint8_t CAM_INIT_MAX_TRIES = 3;
 
 static camera_config_t camera_config = {
     .pin_pwdn = CAM_PIN_PWDN,
@@ -75,14 +75,46 @@ static camera_config_t camera_config = {
 
     .jpeg_quality = 12,
     .fb_count = 1,
-    .fb_location = CAMERA_FB_IN_PSRAM,
+    .fb_location = CAMERA_FB_IN_DRAM,
     .grab_mode = CAMERA_GRAB_WHEN_EMPTY,
     .frame_size = FRAMESIZE_INVALID
 };
 
+const char *frame_size_name(const framesize_t frameSize) {
+    switch(frameSize) {
+        case FRAMESIZE_96X96:   return "96x96";
+        case FRAMESIZE_QQVGA:   return "160x120";
+        case FRAMESIZE_128X128: return "128x128";
+        case FRAMESIZE_QCIF:    return "176x144";
+        case FRAMESIZE_HQVGA:   return "240x176";
+        case FRAMESIZE_240X240: return "240x240";
+        case FRAMESIZE_QVGA:    return "320x240";
+        case FRAMESIZE_320X320: return "320x320";
+        case FRAMESIZE_CIF:     return "400x296";
+        case FRAMESIZE_HVGA:    return "480x320";
+        case FRAMESIZE_VGA:     return "640x480";
+        case FRAMESIZE_SVGA:    return "800x600";
+        case FRAMESIZE_XGA:     return "1024x768";
+        case FRAMESIZE_HD:      return "1280x720";
+        case FRAMESIZE_SXGA:    return "1280x1024";
+        case FRAMESIZE_UXGA:    return "1600x1200";
+        case FRAMESIZE_FHD:     return "1920x1080";
+        case FRAMESIZE_P_HD:    return "720x1280";
+        case FRAMESIZE_P_3MP:   return "864x1536";
+        case FRAMESIZE_QXGA:    return "2048x1536";
+        case FRAMESIZE_QHD:     return "2560x1440";
+        case FRAMESIZE_WQXGA:   return "2560x1600";
+        case FRAMESIZE_P_FHD:   return "1080x1920";
+        case FRAMESIZE_QSXGA:   return "2560x1920";
+        case FRAMESIZE_5MP:     return "2592x1944";
+        case FRAMESIZE_INVALID: return "FRAMESIZE_INVALID";
+        default: assert(!"Unknown frame size");
+    }
+}
+
 void set_camera_resolution(const framesize_t frameSize) {
     camera_config.frame_size = frameSize;
-    ESP_LOGI(TAG, "Camera resolution set to %d", camera_config.frame_size);
+    ESP_LOGI(TAG, "Camera resolution set to %s", frame_size_name(camera_config.frame_size));
 }
 
 void set_camera_parameters() {

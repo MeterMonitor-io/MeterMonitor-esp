@@ -62,12 +62,16 @@ static void mqtt_event_handler(__attribute__((unused)) void *handler_args, esp_e
 void start_mqtt(void) {
     esp_log_level_set(TAG, ESP_LOG_INFO);
     mqtt_event_group = xEventGroupCreate();
+    if (mqtt_event_group == NULL) {
+        ESP_LOGE(TAG, "Error creating event group! Exiting!");
+        esp_restart();
+    }
 
     ESP_LOGI(TAG, "Starting MQTT-Connection");
     esp_mqtt_client_config_t mqtt_cfg = {
         .broker.address.uri = config.mqtt_uri,
         .broker.address.port = config.mqtt_port,
-        .credentials.client_id = config.meter_monitor_name
+        .buffer.out_size = 1024 * 64
     };
     if (config.mqtt_username_defined) {
         mqtt_cfg.credentials.username = config.mqtt_username;
@@ -113,5 +117,6 @@ void publish_message(const char *msg) {
 
 
 void stop_mqtt(void) {
+    ESP_LOGI(TAG, "Disconnecting from MQTT-Broker");
     ESP_ERROR_CHECK(esp_mqtt_client_disconnect(client));
 }
