@@ -49,5 +49,6 @@ void wait_for_time_sync(void) {
         ESP_LOGE(TAG, "Time was not synced within %d seconds", SECONDS_TO_WAIT_FOR_TIME);
     }
 
+    // De-Init sntp as it will not be necessary any more
     esp_netif_sntp_deinit();
 }
