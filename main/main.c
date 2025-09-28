@@ -97,6 +97,7 @@ static void picture_capture_task() {
     // -----------------------------------------------------------------------------------------------------------------
     // -------------------------------------- READ CUSTOM CONFIG FROM SD-CARD ------------------------------------------
     // -----------------------------------------------------------------------------------------------------------------
+    vTaskDelay(pdMS_TO_TICKS(200)); // Let voltage stabilize before using the SD card
     if (mount_sd_card()) {
         if (!import_settings_from_file()) {
             ESP_LOGW(TAG, "Could not import settings from SD-Card. Skipping file import");
@@ -141,7 +142,12 @@ static void picture_capture_task() {
     // -----------------------------------------------------------------------------------------------------------------
     // ----------------------------------------------- INIT WIFI -------------------------------------------------------
     // -----------------------------------------------------------------------------------------------------------------
-    connect_wifi();
+
+    const bool success = connect_wifi();
+    if (!success) {
+        ESP_LOGE(TAG, "MeterMonitor can't function without WiFi connection. Restarting now...");
+        esp_restart();
+    }
 
     // Get and save RSSI information for the connected access point
     wifi_ap_record_t ap_info;

@@ -4,10 +4,10 @@
 
 #include "driver/sdmmc_host.h"
 #include "esp_vfs_fat.h"
-#include <sys/unistd.h>
 #include "sdmmc_cmd.h"
 #include <sys/stat.h>
 #include <string.h>
+#include <errno.h>
 #include "cJSON.h"
 
 #define MOUNT_POINT "/sdcard"
@@ -30,7 +30,7 @@ bool mount_sd_card() {
     const esp_vfs_fat_sdmmc_mount_config_t mount_config = {
         .allocation_unit_size = 16 * 1024,
         .format_if_mount_failed = false,
-        .max_files = 1
+        .max_files = 5
     };
 
     const esp_err_t ret = esp_vfs_fat_sdmmc_mount(MOUNT_POINT, &host, &slot_config, &mount_config, &card);
@@ -56,7 +56,7 @@ static char * read_config_file_into_buffer(size_t *out_size) {
     ESP_LOGI(TAG, "Reading file %s", configPath);
     FILE *config_file = fopen(configPath, "rb");
     if (!config_file) {
-        ESP_LOGE(TAG, "Fehler beim Öffnen der Datei %s", configPath);
+        ESP_LOGE(TAG, "Fehler beim Öffnen der Datei %s. errno: %d (%s)", configPath, errno, strerror(errno));
         return NULL;
     }
 
