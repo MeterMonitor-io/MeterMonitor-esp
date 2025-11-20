@@ -153,11 +153,8 @@ static void picture_capture_task() {
         ESP_LOGI(TAG, "Checking if config was previously saved in NVS");
         if (check_if_config_in_nvs()) {
             ESP_LOGI(TAG, "Config was found in NVS");
-            if (read_config_from_nvs()) {
-                ESP_LOGI(TAG, "Config was successfully read from NVS");
-            } else {
-                ESP_LOGW(TAG, "Could not read config from NVS. Using default values");
-            }
+            read_config_from_nvs();
+            ESP_LOGI(TAG, "Config was populated from NVS-entries");
         } else {
             ESP_LOGW(TAG, "No config was found in NVS. Using default values");
         }

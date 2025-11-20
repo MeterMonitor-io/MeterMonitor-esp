@@ -141,5 +141,5 @@ bool config_set_done_gpio(int gpio);
 
 // NVS store-and-retrieve-functions
 bool check_if_config_in_nvs();
-bool read_config_from_nvs();
+void read_config_from_nvs();
 bool write_config_to_nvs();

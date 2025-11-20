@@ -322,7 +322,12 @@ bool unmount_sd_card() {
     }
     ESP_LOGI(TAG, "Filesystem unmounted");
 
-    spi_bus_free(host.slot);
+    const esp_err_t spi_err = spi_bus_free(host.slot);
+    if (spi_err != ESP_OK) {
+        ESP_LOGE(TAG, "Failed to free spi-bus: %s", esp_err_to_name(spi_err));
+        return false;
+    }
+    ESP_LOGI(TAG, "SPI bus deinitialized");
 
     return true;
 }

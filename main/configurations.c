@@ -1,6 +1,7 @@
 #include "configurations.h"
 
 #include "nvs_helper.h"
+
 #include <string.h>
 
 configurations_t config;
@@ -252,7 +253,7 @@ bool check_if_config_in_nvs() {
     return true;
 }
 
-bool read_config_from_nvs() {
+void read_config_from_nvs() {
     read_string("meter_name", config.meter_monitor_name);
     read_value("sleep_time_min", (uint32_t *) &config.sleep_time_min);
 
@@ -285,8 +286,6 @@ bool read_config_from_nvs() {
 
     read_value("send_done", (uint32_t *) &config.send_done);
     read_value("done_gpio", (uint32_t *) &config.done_gpio);
-
-    return true;
 }
 
 bool write_config_to_nvs() {
