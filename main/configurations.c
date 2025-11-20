@@ -1,5 +1,6 @@
 #include "configurations.h"
 
+#include "nvs_helper.h"
 #include <string.h>
 
 configurations_t config;
@@ -243,5 +244,84 @@ bool config_set_done_gpio(const int gpio) {
         return false;
     }
     config.done_gpio = gpio;
+    return true;
+}
+
+bool check_if_config_in_nvs() {
+    if (!is_key_present("meter_name")) return false;
+    return true;
+}
+
+bool read_config_from_nvs() {
+    read_string("meter_name", config.meter_monitor_name);
+    read_value("sleep_time_min", (uint32_t *) &config.sleep_time_min);
+
+    read_string("wifi_ssid", config.wifi_ssid);
+    read_string("wifi_password", config.wifi_password);
+    read_value("wifi_max_try", (uint32_t *) &config.wifi_maximum_retry);
+
+    read_string("sntp_time_svr", config.sntp_time_server);
+    read_value("sntp_syncAlways", (uint32_t *) &config.sntp_time_sync_always);
+
+    read_string("mqtt_uri", config.mqtt_uri);
+    read_value("mqtt_port", (uint32_t *) &config.mqtt_port);
+    read_string("mqtt_topic_base", config.mqtt_topic_base);
+    read_value("mqtt_usr_def", (uint32_t *) &config.mqtt_username_defined);
+    read_string("mqtt_username", config.mqtt_username);
+    read_value("mqtt_pwd_def", (uint32_t *) &config.mqtt_password_defined);
+    read_string("mqtt_password", config.mqtt_password);
+
+    read_value("flash_light", (uint32_t *) &config.flash_light);
+    read_value("flash_gpio", (uint32_t *) &config.flash_gpio);
+
+    read_value("led_strip", (uint32_t *) &config.led_strip);
+    read_value("led_strip_gpio", (uint32_t *) &config.led_strip_gpio);
+    read_value("led_strip_count", (uint32_t *) &config.led_strip_count);
+    read_value("led_r", (uint32_t *) &config.led_r);
+    read_value("led_g", (uint32_t *) &config.led_g);
+    read_value("led_b", (uint32_t *) &config.led_b);
+
+    read_value("camera_frame", (uint32_t *) &config.camera_frame_size);
+
+    read_value("send_done", (uint32_t *) &config.send_done);
+    read_value("done_gpio", (uint32_t *) &config.done_gpio);
+
+    return true;
+}
+
+bool write_config_to_nvs() {
+    if (!write_string("meter_name", config.meter_monitor_name)) return false;
+    if (!write_value("sleep_time_min", config.sleep_time_min)) return false;
+
+    if (!write_string("wifi_ssid", config.wifi_ssid)) return false;
+    if (!write_string("wifi_password", config.wifi_password)) return false;
+    if (!write_value("wifi_max_try", config.wifi_maximum_retry)) return false;
+
+    if (!write_string("sntp_time_svr", config.sntp_time_server)) return false;
+    if (!write_value("sntp_syncAlways", config.sntp_time_sync_always)) return false;
+
+    if (!write_string("mqtt_uri", config.mqtt_uri)) return false;
+    if (!write_value("mqtt_port", config.mqtt_port)) return false;
+    if (!write_string("mqtt_topic_base", config.mqtt_topic_base)) return false;
+    if (!write_value("mqtt_usr_def", config.mqtt_username_defined)) return false;
+    if (!write_string("mqtt_username", config.mqtt_username)) return false;
+    if (!write_value("mqtt_pwd_def", config.mqtt_password_defined)) return false;
+    if (!write_string("mqtt_password", config.mqtt_password)) return false;
+
+    if (!write_value("flash_light", config.flash_light)) return false;
+    if (!write_value("flash_gpio", config.flash_gpio)) return false;
+
+    if (!write_value("led_strip", config.led_strip)) return false;
+    if (!write_value("led_strip_gpio", config.led_strip_gpio)) return false;
+    if (!write_value("led_strip_count", config.led_strip_count)) return false;
+    if (!write_value("led_r", config.led_r)) return false;
+    if (!write_value("led_g", config.led_g)) return false;
+    if (!write_value("led_b", config.led_b)) return false;
+
+    if (!write_value("camera_frame", config.camera_frame_size)) return false;
+
+    if (!write_value("send_done", config.send_done)) return false;
+    if (!write_value("done_gpio", config.done_gpio)) return false;
+
     return true;
 }

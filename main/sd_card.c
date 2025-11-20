@@ -14,6 +14,8 @@
 
 const char *configPath = MOUNT_POINT"/config.json";
 static const char *TAG = "[SD-Card]";
+
+sdmmc_host_t host = SDSPI_HOST_DEFAULT();
 sdmmc_card_t *card;
 
 /**
@@ -24,16 +26,33 @@ bool mount_sd_card() {
     esp_log_level_set(TAG, ESP_LOG_INFO);
     ESP_LOGI(TAG, "Initializing SD card");
 
-    const sdmmc_host_t host = SDMMC_HOST_DEFAULT();
-    sdmmc_slot_config_t slot_config = SDMMC_SLOT_CONFIG_DEFAULT();
-    slot_config.width = 1;
+    // TODO: Validate for Seeed Studio XIAO ESP32S3!
+    const spi_bus_config_t bus_cfg = {
+        .mosi_io_num = 15,
+        .miso_io_num = 2,
+        .sclk_io_num = 14,
+        .quadwp_io_num = -1,
+        .quadhd_io_num = -1,
+        .max_transfer_sz = 4000,
+    };
+
+    const esp_err_t spi_ret = spi_bus_initialize(host.slot, &bus_cfg, SDSPI_DEFAULT_DMA);
+    if (spi_ret != ESP_OK) {
+        ESP_LOGE(TAG, "Failed to initialize spi-bus.");
+        return false;
+    }
+
+    sdspi_device_config_t slot_config = SDSPI_DEVICE_CONFIG_DEFAULT();
+    slot_config.gpio_cs = GPIO_NUM_13;
+    slot_config.host_id = host.slot;
+
     const esp_vfs_fat_sdmmc_mount_config_t mount_config = {
         .allocation_unit_size = 16 * 1024,
         .format_if_mount_failed = false,
         .max_files = 5
     };
 
-    const esp_err_t ret = esp_vfs_fat_sdmmc_mount(MOUNT_POINT, &host, &slot_config, &mount_config, &card);
+    const esp_err_t ret = esp_vfs_fat_sdspi_mount(MOUNT_POINT, &host, &slot_config, &mount_config, &card);
     if (ret != ESP_OK) {
         if (ret == ESP_FAIL) {
             ESP_LOGE(TAG, "Failed to mount filesystem.");
@@ -78,7 +97,7 @@ static char * read_config_file_into_buffer(size_t *out_size) {
         return NULL;
     }
 
-    // Lesen und terminieren
+    // Lesen und Terminieren
     const size_t read = fread(buf, 1, len, config_file);
     buf[read] = '\0';
     fclose(config_file);
@@ -296,19 +315,14 @@ bool import_settings_from_file() {
  * @return true if the filesystem has been unmounted successfully, else false
  */
 bool unmount_sd_card() {
-    esp_err_t err = sdmmc_host_deinit();
-    if (err != ESP_OK) {
-        ESP_LOGE(TAG, "Failed to deinit SPI host: %s", esp_err_to_name(err));
-        return false;
-    }
-    ESP_LOGI(TAG, "SPI host deinitialized");
-
-    err = esp_vfs_fat_sdcard_unmount(MOUNT_POINT, card);
+    const esp_err_t err = esp_vfs_fat_sdcard_unmount(MOUNT_POINT, card);
     if (err != ESP_OK) {
         ESP_LOGE(TAG, "Failed to unmount filesystem: %s", esp_err_to_name(err));
         return false;
     }
     ESP_LOGI(TAG, "Filesystem unmounted");
+
+    spi_bus_free(host.slot);
 
     return true;
 }

@@ -7,8 +7,14 @@
 extern nvs_handle persistent_storage_handle;
 
 bool init_nvs(void);
+bool is_key_present(const char *key);
+
 void read_value(const char* key, uint32_t* value);
 bool write_value(const char* key, uint32_t value);
+
+void read_string(const char *key, char *value);
+bool write_string(const char *key, const char *value);
+
 void close_nvs(void);
 
 #endif // NVS_HELPER_H

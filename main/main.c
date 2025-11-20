@@ -24,6 +24,7 @@ RTC_DATA_ATTR static struct timeval sleep_enter_time;
 static const char *bootCountKey = "bootCount";
 static const char *TAG = "[Picture-Task]";
 static struct timeval wake_up_time;
+bool importedFromSdCard = false;
 bool timeSyncing = false;
 bool isCleanBoot = false;
 uint32_t bootCount;
@@ -95,19 +96,6 @@ static void picture_capture_task() {
     init_config();
 
     // -----------------------------------------------------------------------------------------------------------------
-    // -------------------------------------- READ CUSTOM CONFIG FROM SD-CARD ------------------------------------------
-    // -----------------------------------------------------------------------------------------------------------------
-    vTaskDelay(pdMS_TO_TICKS(200)); // Let voltage stabilize before using the SD card
-    if (mount_sd_card()) {
-        if (!import_settings_from_file()) {
-            ESP_LOGW(TAG, "Could not import settings from SD-Card. Skipping file import");
-        }
-        unmount_sd_card();
-    } else {
-        ESP_LOGW(TAG, "Could not initialise SD-Card. Skipping file import");
-    }
-
-    // -----------------------------------------------------------------------------------------------------------------
     // ----------------------------------------------- INIT NVS --------------------------------------------------------
     // -----------------------------------------------------------------------------------------------------------------
     if (!init_nvs()) return;
@@ -137,6 +125,43 @@ static void picture_capture_task() {
         default:
             isCleanBoot = true;
             ESP_LOGI(TAG, "Device is booting...");
+    }
+
+    // -----------------------------------------------------------------------------------------------------------------
+    // -------------------------------------- READ CUSTOM CONFIG FROM SD-CARD ------------------------------------------
+    // -----------------------------------------------------------------------------------------------------------------
+    if (mount_sd_card()) {
+        if (!import_settings_from_file()) {
+            ESP_LOGW(TAG, "Could not import settings from SD-Card. Skipping file import");
+        } else {
+            importedFromSdCard = true;
+            if (write_config_to_nvs()) {
+                ESP_LOGI(TAG, "Config was successfully written to NVS");
+            } else {
+                ESP_LOGW(TAG, "Failed writing config to NVS");
+            }
+        }
+        unmount_sd_card();
+    } else {
+        ESP_LOGW(TAG, "Could not initialise SD-Card. Skipping file import");
+    }
+
+    // -----------------------------------------------------------------------------------------------------------------
+    // -------------------------------------- READ BACKUP-CONFIG FROM NVS ----------------------------------------------
+    // -----------------------------------------------------------------------------------------------------------------
+    if (!importedFromSdCard) {
+        ESP_LOGI(TAG, "Checking if config was previously saved in NVS");
+        if (check_if_config_in_nvs()) {
+            ESP_LOGI(TAG, "Config was found in NVS");
+            if (read_config_from_nvs()) {
+                ESP_LOGI(TAG, "Config was successfully read from NVS");
+            } else {
+                ESP_LOGW(TAG, "Could not read config from NVS. Using default values");
+            }
+        } else {
+            ESP_LOGW(TAG, "No config was found in NVS. Using default values");
+        }
+        importedFromSdCard = false;
     }
 
     // -----------------------------------------------------------------------------------------------------------------
@@ -248,7 +273,7 @@ static void picture_capture_task() {
     cJSON *root = cJSON_CreateObject();
     cJSON *picNode = cJSON_CreateObject();
     cJSON_AddItemToObject(root, "name", cJSON_CreateString(config.meter_monitor_name));
-    cJSON_AddNumberToObject(root, "picture_number", (double)bootCount);
+    cJSON_AddNumberToObject(root, "picture_number", (double) bootCount);
     cJSON_AddNumberToObject(root, "WiFi-RSSI", wifiRSSI);
     cJSON_AddItemToObject(root, "picture", picNode);
     cJSON_AddStringToObject(picNode, "format", "jpeg");
