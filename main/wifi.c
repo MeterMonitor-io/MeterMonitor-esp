@@ -86,7 +86,7 @@ bool connect_wifi(void) {
                     .scan_method = WIFI_FAST_SCAN,
                     .sort_method = WIFI_CONNECT_AP_BY_SIGNAL,
                     .threshold.rssi = -127,
-                    .threshold.authmode = WIFI_AUTH_OPEN,
+                    .threshold.authmode = WIFI_AUTH_WPA2_PSK,
             },
     };
     strncpy((char *)wifi_config.sta.ssid, config.wifi_ssid, sizeof(wifi_config.sta.ssid));

@@ -2,6 +2,7 @@
 #include "mbedtls/base64.h"
 #include "driver/rtc_io.h"
 #include "freertos/task.h"
+#include <sys/unistd.h>
 #include "esp_sleep.h"
 #include <sys/time.h>
 #include <esp_wifi.h>
@@ -23,6 +24,8 @@ RTC_DATA_ATTR static struct timeval sleep_enter_time;
 static const char *bootCountKey = "bootCount";
 static const char *TAG = "[Picture-Task]";
 static struct timeval wake_up_time;
+bool importedFromSdCard = false;
+bool timeSyncing = false;
 bool isCleanBoot = false;
 uint32_t bootCount;
 int8_t wifiRSSI;
@@ -58,6 +61,8 @@ static void send_done_signal() {
     ESP_LOGI(TAG, "Sending 'Done' signal...");
     for (int i = 1; i <= 3; ++i) {
         ESP_LOGI(TAG, "Sending signal #%i on GPIO%d", i, config.done_gpio);
+        fflush(stdout);
+        fsync(fileno(stdout));
         ESP_ERROR_CHECK(gpio_set_level(config.done_gpio, 1));
         vTaskDelay(pdMS_TO_TICKS(200));
         ESP_ERROR_CHECK(gpio_set_level(config.done_gpio, 0));
@@ -89,18 +94,6 @@ static void picture_capture_task() {
     // --------------------------------------------- INIT CONFIG -------------------------------------------------------
     // -----------------------------------------------------------------------------------------------------------------
     init_config();
-
-    // -----------------------------------------------------------------------------------------------------------------
-    // -------------------------------------- READ CUSTOM CONFIG FROM SD-CARD ------------------------------------------
-    // -----------------------------------------------------------------------------------------------------------------
-    if (mount_sd_card()) {
-        if (!import_settings_from_file()) {
-            ESP_LOGW(TAG, "Could not import settings from SD-Card. Skipping file import");
-        }
-        unmount_sd_card();
-    } else {
-        ESP_LOGW(TAG, "Could not initialise SD-Card. Skipping file import");
-    }
 
     // -----------------------------------------------------------------------------------------------------------------
     // ----------------------------------------------- INIT NVS --------------------------------------------------------
@@ -135,9 +128,48 @@ static void picture_capture_task() {
     }
 
     // -----------------------------------------------------------------------------------------------------------------
+    // -------------------------------------- READ CUSTOM CONFIG FROM SD-CARD ------------------------------------------
+    // -----------------------------------------------------------------------------------------------------------------
+    if (mount_sd_card()) {
+        if (!import_settings_from_file()) {
+            ESP_LOGW(TAG, "Could not import settings from SD-Card. Skipping file import");
+        } else {
+            importedFromSdCard = true;
+            if (write_config_to_nvs()) {
+                ESP_LOGI(TAG, "Config was successfully written to NVS");
+            } else {
+                ESP_LOGW(TAG, "Failed writing config to NVS");
+            }
+        }
+        unmount_sd_card();
+    } else {
+        ESP_LOGW(TAG, "Could not initialise SD-Card. Skipping file import");
+    }
+
+    // -----------------------------------------------------------------------------------------------------------------
+    // -------------------------------------- READ BACKUP-CONFIG FROM NVS ----------------------------------------------
+    // -----------------------------------------------------------------------------------------------------------------
+    if (!importedFromSdCard) {
+        ESP_LOGI(TAG, "Checking if config was previously saved in NVS");
+        if (check_if_config_in_nvs()) {
+            ESP_LOGI(TAG, "Config was found in NVS");
+            read_config_from_nvs();
+            ESP_LOGI(TAG, "Config was populated from NVS-entries");
+        } else {
+            ESP_LOGW(TAG, "No config was found in NVS. Using default values");
+        }
+        importedFromSdCard = false;
+    }
+
+    // -----------------------------------------------------------------------------------------------------------------
     // ----------------------------------------------- INIT WIFI -------------------------------------------------------
     // -----------------------------------------------------------------------------------------------------------------
-    connect_wifi();
+
+    const bool success = connect_wifi();
+    if (!success) {
+        ESP_LOGE(TAG, "MeterMonitor can't function without WiFi connection. Restarting now...");
+        esp_restart();
+    }
 
     // Get and save RSSI information for the connected access point
     wifi_ap_record_t ap_info;
@@ -155,13 +187,17 @@ static void picture_capture_task() {
 
     // Is the time set? If not, tm_year will be (2024-1900).
     if (timeInfo.tm_year < (2024 - 1900)) {
-        ESP_LOGI(TAG, "Time is not set yet. Syncing time over NTP.");
-        obtain_time();
+        ESP_LOGI(TAG, "Time is not set yet. Syncing time over SNTP.");
+        timeSyncing = true;
     } else if (config.sntp_time_sync_always) {
         ESP_LOGI(TAG, "Time is set, but may be out of sync. Syncing time at every boot.");
-        obtain_time();
+        timeSyncing = true;
     } else {
         ESP_LOGI(TAG, "Time is set and will not be synced again.");
+    }
+
+    if (timeSyncing) {
+        start_obtaining_time();
     }
 
     // -----------------------------------------------------------------------------------------------------------------
@@ -198,13 +234,31 @@ static void picture_capture_task() {
     // -----------------------------------------------------------------------------------------------------------------
     // --------------------------------------------- SEND PICTURE ------------------------------------------------------
     // -----------------------------------------------------------------------------------------------------------------
+    const size_t base64_malloc_length = 4 * ((pic->len + 2) / 3) + 1;
+    const size_t largest_space_av = heap_caps_get_largest_free_block(MALLOC_CAP_DEFAULT);
+    if (base64_malloc_length > largest_space_av) {
+        ESP_LOGW(TAG, "Largest free block in memory: %d bytes", largest_space_av);
+        ESP_LOGW(TAG, "Space needed for Base64-Encoding: %d bytes", base64_malloc_length);
+        ESP_LOGE(TAG, "Not enough free memory to encode the image. Try lowering the resolution!");
+        return;
+    }
 
     // Base64 Encode the image buffer
     size_t output_len;
-    unsigned char *base64_data = malloc(4 * ((pic->len + 2) / 3) + 1); // Allocate memory for Base64 string
-    mbedtls_base64_encode(base64_data, 4 * ((pic->len + 2) / 3) + 1, &output_len, pic->buf, pic->len);
+    unsigned char *base64_data = malloc(base64_malloc_length); // Allocate memory for Base64 string
+    mbedtls_base64_encode(base64_data, base64_malloc_length, &output_len, pic->buf, pic->len);
+
+    // Cache pic variables before freeing
+    const size_t pic_width = pic->width;
+    const size_t pic_height = pic->height;
+    const size_t pic_len = pic->len;
+
+    // Free up space for JSON construction (without there is no continuous free block in memory)
+    esp_camera_fb_return(pic);
+    ESP_ERROR_CHECK(free_camera());
 
     // Construct Timestamp-String
+    if (timeSyncing) wait_for_time_sync();
     struct timeval tv;
     gettimeofday(&tv, NULL);
     const time_t nowTime = tv.tv_sec;
@@ -216,14 +270,14 @@ static void picture_capture_task() {
     cJSON *root = cJSON_CreateObject();
     cJSON *picNode = cJSON_CreateObject();
     cJSON_AddItemToObject(root, "name", cJSON_CreateString(config.meter_monitor_name));
-    cJSON_AddNumberToObject(root, "picture_number", (double)bootCount);
+    cJSON_AddNumberToObject(root, "picture_number", (double) bootCount);
     cJSON_AddNumberToObject(root, "WiFi-RSSI", wifiRSSI);
     cJSON_AddItemToObject(root, "picture", picNode);
     cJSON_AddStringToObject(picNode, "format", "jpeg");
     cJSON_AddStringToObject(picNode, "timestamp", timeString);
-    cJSON_AddNumberToObject(picNode, "width", pic->width);
-    cJSON_AddNumberToObject(picNode, "height", pic->height);
-    cJSON_AddNumberToObject(picNode, "length", pic->len);
+    cJSON_AddNumberToObject(picNode, "width", pic_width);
+    cJSON_AddNumberToObject(picNode, "height", pic_height);
+    cJSON_AddNumberToObject(picNode, "length", pic_len);
     cJSON_AddStringToObject(picNode, "data", (char *) base64_data);
 
     // Send the message via MQTT
@@ -235,13 +289,11 @@ static void picture_capture_task() {
     // -----------------------------------------------------------------------------------------------------------------
     cJSON_Delete(root);
     cJSON_free(msg_string);
-    esp_camera_fb_return(pic);
     free(base64_data);
 
     // -----------------------------------------------------------------------------------------------------------------
-    // -------------------------------------- DE-INIT CAMERA & MQTT & WIFI ---------------------------------------------
+    // ------------------------------------------ DE-INIT MQTT & WIFI --------------------------------------------------
     // -----------------------------------------------------------------------------------------------------------------
-    ESP_ERROR_CHECK(free_camera());
     stop_mqtt();
     //disconnect_wifi();
 
@@ -264,7 +316,7 @@ static void picture_capture_task() {
         ESP_LOGW(TAG, "Done signal is disabled, continuing to go into deep sleep!");
     }
 
-    // After this, the power should be cut off externally, but if not, go into deepsleep.
+    // After this, the power should be cut off externally (if configured), but if not, go into deepsleep.
     // -----------------------------------------------------------------------------------------------------------------
     // ---------------------------------------------- START SLEEP ------------------------------------------------------
     // -----------------------------------------------------------------------------------------------------------------

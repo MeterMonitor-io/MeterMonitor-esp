@@ -1,5 +1,7 @@
 #include "nvs_helper.h"
 
+#include "configurations.h"
+
 #include "nvs_flash.h"
 #include "esp_log.h"
 #include <stdio.h>
@@ -21,25 +23,36 @@ bool init_nvs(void) {
     if (err != ESP_OK) {
         ESP_LOGE(TAG, "Error (%s) initializing NVS!", esp_err_to_name(err));
         return false;
-    } else {
-        ESP_LOGI(TAG, "NVS Flash initialized successfully.");
     }
+    ESP_LOGI(TAG, "NVS Flash initialized successfully.");
 
     err = nvs_open(namespace_name, NVS_READWRITE, &persistent_storage_handle);
     if (err != ESP_OK) {
         ESP_LOGI(TAG, "Error (%s) opening NVS handle!", esp_err_to_name(err));
         return false;
-    } else {
-        ESP_LOGI(TAG, "NVS handle opened successfully.");
-        return true;
+    }
+    ESP_LOGI(TAG, "NVS handle opened successfully.");
+
+    return true;
+}
+
+bool is_key_present(const char *key) {
+    const esp_err_t err = nvs_find_key(persistent_storage_handle, key, NULL);
+    switch (err) {
+        case ESP_OK:
+            return true;
+        case ESP_ERR_NVS_NOT_FOUND:
+            return false;
+        default:
+            ESP_LOGE(TAG, "Error (%s) finding key '%s'!", esp_err_to_name(err), key);
+            return false;
     }
 }
 
 void read_value(const char *key, uint32_t *value) {
-    esp_err_t err = nvs_get_u32(persistent_storage_handle, key, value);
+    const esp_err_t err = nvs_get_u32(persistent_storage_handle, key, value);
     switch (err) {
         case ESP_OK:
-            ESP_LOGI(TAG, "Got value = %"PRIu32" with key %s", *value, key);
             break;
         case ESP_ERR_NVS_NOT_FOUND:
             *value = 0;
@@ -51,24 +64,55 @@ void read_value(const char *key, uint32_t *value) {
     }
 }
 
-bool write_value(const char *key, uint32_t value) {
+bool write_value(const char *key, const uint32_t value) {
     esp_err_t err = nvs_set_u32(persistent_storage_handle, key, value);
     if (err != ESP_OK) {
         ESP_LOGE(TAG, "Error (%s) writing!", esp_err_to_name(err));
         return false;
-    } else {
-        ESP_LOGI(TAG, "Successfully updated value (%"PRIu32") for key '%s' in NVS", value, key);
     }
 
     err = nvs_commit(persistent_storage_handle);
     if (err != ESP_OK) {
         ESP_LOGE(TAG, "Error (%s) committing!", esp_err_to_name(err));
         return false;
-    } else {
-        ESP_LOGI(TAG, "Successfully committed updates in NVS");
-        return true;
+    }
+
+    return true;
+}
+
+void read_string(const char *key, char *value) {
+    size_t length = STRINGS_MAX_LENGTH;
+
+    const esp_err_t err = nvs_get_str(persistent_storage_handle, key, value, &length);
+    switch (err) {
+        case ESP_OK:
+            break;
+        case ESP_ERR_NVS_NOT_FOUND:
+            strncpy(value, "", STRINGS_MAX_LENGTH);
+            ESP_LOGI(TAG, "No string found for key '%s'", key);
+            break;
+        default:
+            strncpy(value, "", STRINGS_MAX_LENGTH);
+            ESP_LOGE(TAG, "Error (%s) while reading the string for key '%s'!", esp_err_to_name(err), key);
     }
 }
+
+bool write_string(const char *key, const char *value) {
+    esp_err_t err = nvs_set_str(persistent_storage_handle, key, value);
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "Error (%s) while writing the string with key '%s'!", esp_err_to_name(err), key);
+        return false;
+    }
+
+    err = nvs_commit(persistent_storage_handle);
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "Error (%s) while commiting to NVS!", esp_err_to_name(err));
+        return false;
+    }
+
+    return true;
+}
+
 
 void close_nvs(void) {
     nvs_close(persistent_storage_handle);

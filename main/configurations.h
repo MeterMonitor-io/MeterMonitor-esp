@@ -134,11 +134,12 @@ bool config_set_led_strip_gpio(int gpio);
 bool config_set_led_strip_count(int count);
 bool config_set_led_color(int r, int g, int b);
 
-/**
- * @param frameSize Integer value of framesize in esp32-camera library. See framesize_t in sensor.h
- * @return Always true
- */
 bool config_set_camera_frame_size(int frameSize);
 
 bool config_set_send_done(bool enabled);
 bool config_set_done_gpio(int gpio);
+
+// NVS store-and-retrieve-functions
+bool check_if_config_in_nvs();
+void read_config_from_nvs();
+bool write_config_to_nvs();
